@@ -6,7 +6,8 @@ import {
   endOfWeek,
   format,
   isToday,
-  startOfWeek
+  startOfWeek,
+  isSaturday
 } from "date-fns";
 
 interface WeekViewProps {
@@ -47,12 +48,12 @@ const WeekView: React.FC<WeekViewProps> = ({ currentDate }) => {
             
             <div className="flex-1 grid grid-cols-7">
               {daysInWeek.map((day) => (
-                 <div key={day.toString()} className="flex flex-col items-center justify-center py-3 border-r border-zinc-100 last:border-r-0">
-                   <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-1">{format(day, "EEE")}</span>
+                 <div key={day.toString()} className={`flex flex-col items-center justify-center py-3 border-r border-zinc-100 last:border-r-0 ${isSaturday(day) ? 'bg-red-50/50' : ''}`}>
+                   <span className={`text-[10px] font-bold uppercase tracking-widest mb-1 ${isSaturday(day) ? 'text-red-500' : 'text-zinc-400'}`}>{format(day, "EEE")}</span>
                    <span className={`flex h-8 w-8 md:h-10 md:w-10 items-center justify-center rounded-full md:rounded-2xl text-sm md:text-base font-black transition-all ${
                      isToday(day) 
                        ? "bg-indigo-600 text-white shadow-md shadow-indigo-500/40" 
-                       : "bg-zinc-100/50 text-zinc-900"
+                       : isSaturday(day) ? "bg-red-100/50 text-red-600" : "bg-zinc-100/50 text-zinc-900"
                    }`}>
                      {format(day, "d")}
                    </span>
@@ -84,7 +85,7 @@ const WeekView: React.FC<WeekViewProps> = ({ currentDate }) => {
 
                {/* Days columns */}
                {daysInWeek.map((day) => (
-                 <div key={day.toString()} className="relative border-r border-zinc-100 last:border-r-0 h-full">
+                 <div key={day.toString()} className={`relative border-r border-zinc-100 last:border-r-0 h-full ${isSaturday(day) ? 'bg-red-50/30' : ''}`}>
                     {isToday(day) && (
                       <div className="absolute inset-0 bg-indigo-50/30 pointer-events-none" />
                     )}

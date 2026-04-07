@@ -4,6 +4,7 @@ import React, { useEffect, useRef } from "react";
 import {
   format,
   isToday,
+  isSaturday
 } from "date-fns";
 
 interface DayViewProps {
@@ -13,6 +14,7 @@ interface DayViewProps {
 const DayView: React.FC<DayViewProps> = ({ currentDate }) => {
   const hoursInDay = Array.from({ length: 24 }, (_, i) => i);
   const isTodayDate = isToday(currentDate);
+  const isHoliday = isSaturday(currentDate);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -25,10 +27,12 @@ const DayView: React.FC<DayViewProps> = ({ currentDate }) => {
   return (
     <div className="flex flex-col h-full animate-in slide-in-from-right-4 duration-300 overflow-hidden bg-white">
       {/* Mobile-optimized Header */}
-      <div className="flex-none flex items-center gap-4 p-4 md:p-6 bg-zinc-50/50 border-b border-zinc-100">
+      <div className={`flex-none flex items-center gap-4 p-4 md:p-6 border-b border-zinc-100 ${isHoliday ? 'bg-red-50/20' : 'bg-zinc-50/50'}`}>
         <div className={`flex flex-col items-center justify-center h-16 w-16 md:h-20 md:w-20 shrink-0 rounded-2xl shadow-sm transition-all ${
           isTodayDate 
             ? "bg-indigo-600 text-white shadow-indigo-500/30 md:scale-105" 
+            : isHoliday
+            ? "bg-red-50 text-red-600 ring-1 ring-red-200"
             : "bg-white text-zinc-900 ring-1 ring-zinc-200"
         }`}>
           <span className="text-[10px] md:text-[11px] font-bold uppercase tracking-widest opacity-90">{format(currentDate, "EEE")}</span>
@@ -47,7 +51,7 @@ const DayView: React.FC<DayViewProps> = ({ currentDate }) => {
       <div className="flex-1 overflow-y-auto custom-scrollbar relative" ref={scrollRef}>
         <div className="flex min-h-[1920px]">
           {/* Time sidebar */}
-          <div className="w-16 md:w-24 shrink-0 bg-zinc-50/30 flex flex-col border-r border-zinc-100">
+          <div className={`w-16 md:w-24 shrink-0 flex flex-col border-r border-zinc-100 ${isHoliday ? 'bg-red-50/30' : 'bg-zinc-50/30'}`}>
             {hoursInDay.map((hour) => (
               <div key={hour} className="h-[80px] relative text-right pr-2">
                 <span className="absolute -top-2.5 right-2 md:right-4 text-[10px] md:text-xs font-bold text-zinc-400 tracking-wider bg-white rounded px-1">

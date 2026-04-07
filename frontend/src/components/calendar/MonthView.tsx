@@ -9,7 +9,8 @@ import {
   isSameMonth,
   isToday,
   startOfMonth,
-  startOfWeek
+  startOfWeek,
+  isSaturday
 } from "date-fns";
 
 interface MonthViewProps {
@@ -35,7 +36,9 @@ const MonthView: React.FC<MonthViewProps> = ({ currentDate }) => {
         {weekDays.map((day) => (
           <div
             key={day}
-            className="text-center text-[10px] md:text-xs font-bold uppercase tracking-widest text-zinc-400"
+            className={`text-center text-[10px] md:text-xs font-bold uppercase tracking-widest ${
+              day === "Sat" ? "text-red-500" : "text-zinc-400"
+            }`}
           >
             <span className="hidden md:inline">{day}</span>
             <span className="md:hidden">{day.charAt(0)}</span>
@@ -47,13 +50,16 @@ const MonthView: React.FC<MonthViewProps> = ({ currentDate }) => {
         {days.map((day) => {
           const isCurrentMonth = isSameMonth(day, monthStart);
           const isTodayDate = isToday(day);
+          const isHoliday = isSaturday(day);
 
           return (
             <div
               key={day.toString()}
               className={`relative rounded-xl md:rounded-2xl p-1 md:p-2 h-full min-h-[60px] md:min-h-[100px] flex flex-col group transition-all ring-1 ring-inset ${
                 isCurrentMonth
-                  ? "bg-white ring-zinc-200 hover:ring-indigo-500/50 cursor-pointer"
+                  ? isHoliday
+                    ? "bg-red-50/50 ring-red-100 hover:ring-red-300 cursor-pointer"
+                    : "bg-white ring-zinc-200 hover:ring-indigo-500/50 cursor-pointer"
                   : "bg-zinc-50/50 ring-zinc-100 text-zinc-400/50"
               }`}
             >
@@ -63,7 +69,7 @@ const MonthView: React.FC<MonthViewProps> = ({ currentDate }) => {
                     isTodayDate
                       ? "bg-indigo-600 text-white shadow-lg shadow-indigo-500/40 md:scale-110"
                       : isCurrentMonth
-                      ? "text-zinc-800"
+                      ? isHoliday ? "text-red-600" : "text-zinc-800"
                       : "text-zinc-400"
                   }`}
                 >
