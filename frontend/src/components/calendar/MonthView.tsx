@@ -9,15 +9,21 @@ import {
   isSameMonth,
   isToday,
   startOfMonth,
-  startOfWeek,
-  isSaturday
+  startOfWeek
 } from "date-fns";
+import { useConfig } from "@/context/ConfigContext";
+import { useAuth } from "@/context/AuthContext";
 
 interface MonthViewProps {
   currentDate: Date;
+  onDateClick?: (date: Date) => void;
 }
 
-const MonthView: React.FC<MonthViewProps> = ({ currentDate }) => {
+const MonthView: React.FC<MonthViewProps> = ({ currentDate, onDateClick }) => {
+  const { getHolidayStatus, holidays, halfHolidays } = useConfig();
+  const { role } = useAuth();
+  const isAdmin = role === "ADMIN";
+
   const monthStart = startOfMonth(currentDate);
   const monthEnd = endOfMonth(monthStart);
   const calendarStart = startOfWeek(monthStart);
@@ -33,35 +39,55 @@ const MonthView: React.FC<MonthViewProps> = ({ currentDate }) => {
   return (
     <div className="flex flex-col h-full p-2 md:p-6 lg:p-8 animate-in fade-in duration-500 overflow-hidden bg-background">
       <div className="grid grid-cols-7 mb-2 md:mb-4 border-b border-border pb-2">
-        {weekDays.map((day) => (
-          <div
-            key={day}
-            className={`text-center text-[10px] md:text-xs font-bold uppercase tracking-widest ${
-              day === "Sat" ? "text-holiday" : "text-muted-foreground"
-            }`}
-          >
-            <span className="hidden md:inline">{day}</span>
-            <span className="md:hidden">{day.charAt(0)}</span>
-          </div>
-        ))}
+        {weekDays.map((day, idx) => {
+          const isHeaderHoliday = holidays.includes(idx);
+          const isHeaderHalf = !!halfHolidays[idx];
+          const halfColor = halfHolidays[idx]?.color;
+          return (
+            <div
+              key={day}
+              className={`text-center text-[10px] md:text-xs font-bold uppercase tracking-widest ${
+                isHeaderHoliday ? "text-holiday" : "text-muted-foreground"
+              }`}
+              style={isHeaderHalf ? { color: halfColor } : {}}
+            >
+              <span className="hidden md:inline">{day}</span>
+              <span className="md:hidden">{day.charAt(0)}</span>
+            </div>
+          );
+        })}
       </div>
 
       <div className="flex-1 grid grid-cols-7 auto-rows-fr gap-1 md:gap-2 lg:gap-4 overflow-y-auto custom-scrollbar">
         {days.map((day) => {
           const isCurrentMonth = isSameMonth(day, monthStart);
           const isTodayDate = isToday(day);
-          const isHoliday = isSaturday(day);
+          
+          const status = getHolidayStatus(day);
+          const isFullHoliday = status.type === "FULL";
+          const isHalfHoliday = status.type === "HALF";
 
           return (
             <div
               key={day.toString()}
+              onClick={() => {
+                if (isAdmin && onDateClick) {
+                  onDateClick(day);
+                }
+              }}
               className={`relative rounded-xl md:rounded-2xl p-1 md:p-2 h-full min-h-[60px] md:min-h-[100px] flex flex-col group transition-all ring-1 ring-inset ${
                 isCurrentMonth
-                  ? isHoliday
-                    ? "bg-holiday-bg ring-holiday/20 hover:ring-holiday/50 cursor-pointer"
-                    : "bg-background ring-border hover:ring-primary/50 cursor-pointer"
+                  ? isFullHoliday
+                    ? "bg-holiday-bg ring-holiday/20 hover:ring-holiday/50"
+                    : isHalfHoliday
+                      ? `bg-opacity-10 ring-opacity-20 hover:ring-opacity-50` // Base styles, custom color applied via style
+                      : "bg-background ring-border hover:ring-primary/50"
                   : "bg-muted/50 ring-transparent text-muted-foreground/50"
-              }`}
+              } ${isAdmin ? "cursor-pointer" : ""}`}
+              style={isCurrentMonth && isHalfHoliday ? { 
+                backgroundColor: `${status.config?.color}11`, // 11 is hex for ~7% opacity
+                boxShadow: `inset 0 0 0 1px ${status.config?.color}33` // 33 is hex for 20% opacity
+              } : {}}
             >
               <div className="flex justify-center md:justify-between items-center mb-1 md:mb-2">
                 <span
@@ -69,9 +95,10 @@ const MonthView: React.FC<MonthViewProps> = ({ currentDate }) => {
                     isTodayDate
                       ? "bg-primary text-primary-foreground shadow-lg shadow-primary/40 md:scale-110"
                       : isCurrentMonth
-                      ? isHoliday ? "text-holiday" : "text-foreground"
+                      ? isFullHoliday ? "text-holiday" : "text-foreground"
                       : "text-muted-foreground"
                   }`}
+                  style={isCurrentMonth && isHalfHoliday && !isTodayDate ? { color: status.config?.color } : {}}
                 >
                   {format(day, "d")}
                 </span>

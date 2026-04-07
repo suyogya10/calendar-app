@@ -1,130 +1,170 @@
 "use client";
 
-import React, { useEffect } from "react";
+import React, { useState } from "react";
+import { X, Calendar as CalendarIcon, Clock, Type, Tag, Save } from "lucide-react";
 import { format } from "date-fns";
-import { X, Calendar as CalendarIcon, Clock, AlignLeft } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
 interface EventModalProps {
   isOpen: boolean;
   onClose: () => void;
   selectedDate: Date;
+  initialTime?: string;
 }
 
-const EventModal: React.FC<EventModalProps> = ({ isOpen, onClose, selectedDate }) => {
-  // Prevent background scrolling when modal is open on mobile
-  useEffect(() => {
-    if (isOpen) {
-      document.body.style.overflow = "hidden";
-    } else {
-      document.body.style.overflow = "auto";
-    }
-    return () => {
-      document.body.style.overflow = "auto";
-    };
-  }, [isOpen]);
+export function EventModal({ isOpen, onClose, selectedDate, initialTime }: EventModalProps) {
+  const [title, setTitle] = useState("");
+  const [startTime, setStartTime] = useState(initialTime || "09:00");
+  const [endTime, setEndTime] = useState("10:00");
+  const [category, setCategory] = useState("Meeting");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleSave = () => {
+    setIsSubmitting(true);
+    // Mock save
+    setTimeout(() => {
+      setIsSubmitting(false);
+      onClose();
+      // In a real app, we would update the event context here
+    }, 800);
+  };
 
   return (
     <AnimatePresence>
       {isOpen && (
-        <>
-          {/* Backdrop */}
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={onClose}
-            className="fixed inset-0 bg-zinc-900/40 backdrop-blur-sm z-[100]"
+            className="absolute inset-0 bg-background/60 backdrop-blur-md"
           />
-
-          {/* Modal Content */}
+          
           <motion.div
-            initial={{ opacity: 0, y: "100%", scale: 0.95 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: "100%", scale: 0.95 }}
-            transition={{ type: "spring", damping: 25, stiffness: 300 }}
-            className="fixed inset-x-0 bottom-0 md:inset-auto md:left-1/2 md:top-1/2 md:-translate-x-1/2 md:-translate-y-1/2 w-full md:w-[480px] bg-white rounded-t-3xl md:rounded-3xl shadow-2xl z-[101] overflow-hidden flex flex-col max-h-[90dvh]"
+            initial={{ opacity: 0, scale: 0.95, y: 20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.95, y: 20 }}
+            className="relative w-full max-w-lg bg-background border border-border shadow-2xl rounded-3xl overflow-hidden"
           >
-            {/* Header */}
-            <div className="flex items-center justify-between p-6 border-b border-zinc-100">
-              <h2 className="text-xl font-black text-zinc-900">New Event</h2>
-              <button
+            <div className="flex items-center justify-between p-6 border-b border-border bg-muted/30">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-primary/10 text-primary rounded-xl">
+                  <CalendarIcon className="w-5 h-5" />
+                </div>
+                <div>
+                  <h2 className="text-xl font-black text-foreground tracking-tight">Create Event</h2>
+                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-widest mt-0.5">Admin Only</p>
+                </div>
+              </div>
+              <button 
                 onClick={onClose}
-                className="p-2 bg-zinc-100 hover:bg-zinc-200 text-zinc-500 rounded-full transition-colors"
+                className="p-2 hover:bg-muted rounded-full text-muted-foreground transition-colors active:scale-90"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            {/* Body */}
-            <div className="p-6 flex-1 overflow-y-auto custom-scrollbar flex flex-col gap-6">
-              {/* Event Title */}
-              <div>
-                <input
+            <div className="p-6 space-y-6">
+              {/* Title Input */}
+              <div className="space-y-2">
+                <label className="flex items-center gap-2 text-sm font-bold text-foreground">
+                  <Type className="w-4 h-4 text-muted-foreground" />
+                  Event Title
+                </label>
+                <input 
                   type="text"
-                  placeholder="Event title"
-                  className="w-full text-2xl font-bold bg-transparent border-none outline-none placeholder:text-zinc-300 text-zinc-900"
+                  placeholder="What's happening?"
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                  className="w-full px-4 py-3 bg-muted/50 border border-border rounded-xl text-foreground font-semibold focus:outline-none focus:ring-2 focus:ring-primary/40 transition-all placeholder:text-muted-foreground/50"
                   autoFocus
                 />
               </div>
 
-              {/* Date & Time */}
-              <div className="flex flex-col gap-4 p-4 bg-zinc-50 rounded-2xl border border-zinc-100">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 bg-white rounded-xl shadow-sm border border-zinc-100/50">
-                    <CalendarIcon className="w-5 h-5 text-indigo-500" />
-                  </div>
-                  <div className="flex-1">
-                    <p className="text-xs font-bold uppercase tracking-widest text-zinc-500 mb-1">Date</p>
-                    <p className="text-sm font-semibold text-zinc-900">{format(selectedDate, "EEEE, MMMM d, yyyy")}</p>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Date Display */}
+                <div className="space-y-2">
+                  <label className="flex items-center gap-2 text-sm font-bold text-foreground">
+                    <CalendarIcon className="w-4 h-4 text-muted-foreground" />
+                    Date
+                  </label>
+                  <div className="w-full px-4 py-3 bg-muted/30 border border-border rounded-xl text-foreground font-semibold opacity-70">
+                    {format(selectedDate, "MMMM d, yyyy")}
                   </div>
                 </div>
-                
-                <div className="flex items-center gap-3">
-                  <div className="p-2 bg-white rounded-xl shadow-sm border border-zinc-100/50">
-                    <Clock className="w-5 h-5 text-indigo-500" />
-                  </div>
-                  <div className="flex-1 flex gap-2 items-center">
-                    <div className="flex-1">
-                      <p className="text-xs font-bold uppercase tracking-widest text-zinc-500 mb-1">Start</p>
-                      <input type="time" defaultValue="09:00" className="bg-transparent text-sm font-semibold outline-none" />
-                    </div>
-                    <div className="w-px h-8 bg-zinc-200"></div>
-                    <div className="flex-1 pl-2">
-                      <p className="text-xs font-bold uppercase tracking-widest text-zinc-500 mb-1">End</p>
-                      <input type="time" defaultValue="10:00" className="bg-transparent text-sm font-semibold outline-none" />
-                    </div>
-                  </div>
+
+                {/* Category Selection */}
+                <div className="space-y-2">
+                  <label className="flex items-center gap-2 text-sm font-bold text-foreground">
+                    <Tag className="w-4 h-4 text-muted-foreground" />
+                    Category
+                  </label>
+                  <select 
+                    value={category}
+                    onChange={(e) => setCategory(e.target.value)}
+                    className="w-full px-4 py-3 bg-muted/50 border border-border rounded-xl text-foreground font-semibold focus:outline-none focus:ring-2 focus:ring-primary/40 transition-all"
+                  >
+                    <option>Meeting</option>
+                    <option>Workshop</option>
+                    <option>Maintenance</option>
+                    <option>Other</option>
+                  </select>
                 </div>
               </div>
 
-              {/* Description */}
-              <div className="flex items-start gap-4">
-                 <AlignLeft className="w-5 h-5 text-zinc-400 mt-1" />
-                 <textarea 
-                    placeholder="Add description..." 
-                    className="flex-1 bg-transparent border-none outline-none resize-none min-h-[100px] text-sm text-zinc-700 placeholder:text-zinc-400"
-                 />
+              {/* Time Selection */}
+              <div className="grid grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <label className="flex items-center gap-2 text-sm font-bold text-foreground">
+                    <Clock className="w-4 h-4 text-muted-foreground" />
+                    Start Time
+                  </label>
+                  <input 
+                    type="time" 
+                    value={startTime}
+                    onChange={(e) => setStartTime(e.target.value)}
+                    className="w-full px-4 py-3 bg-muted/50 border border-border rounded-xl text-foreground font-semibold focus:outline-none focus:ring-2 focus:ring-primary/40 transition-all"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="flex items-center gap-2 text-sm font-bold text-foreground">
+                    <Clock className="w-4 h-4 text-muted-foreground" />
+                    End Time
+                  </label>
+                  <input 
+                    type="time" 
+                    value={endTime}
+                    onChange={(e) => setEndTime(e.target.value)}
+                    className="w-full px-4 py-3 bg-muted/50 border border-border rounded-xl text-foreground font-semibold focus:outline-none focus:ring-2 focus:ring-primary/40 transition-all"
+                  />
+                </div>
               </div>
             </div>
 
-            {/* Footer */}
-            <div className="p-6 pt-2 border-t border-zinc-100 bg-white">
+            <div className="p-6 bg-muted/30 border-t border-border flex justify-end gap-3">
               <button 
-                className="w-full py-4 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-2xl shadow-lg shadow-indigo-500/20 active:scale-[0.98] transition-all"
-                onClick={() => {
-                  alert("Event saved successfully! (UI Only)");
-                  onClose();
-                }}
+                onClick={onClose}
+                className="px-6 py-2.5 text-sm font-bold text-muted-foreground hover:text-foreground hover:bg-muted rounded-xl transition-all"
               >
+                Cancel
+              </button>
+              <button 
+                onClick={handleSave}
+                disabled={!title || isSubmitting}
+                className="flex items-center gap-2 px-8 py-2.5 bg-primary text-primary-foreground text-sm font-black rounded-xl shadow-lg shadow-primary/30 hover:opacity-90 active:scale-95 transition-all disabled:opacity-50 disabled:scale-100 disabled:shadow-none"
+              >
+                {isSubmitting ? (
+                  <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                ) : (
+                  <Save className="w-4 h-4" />
+                )}
                 Save Event
               </button>
             </div>
           </motion.div>
-        </>
+        </div>
       )}
     </AnimatePresence>
   );
-};
-
-export default EventModal;
+}

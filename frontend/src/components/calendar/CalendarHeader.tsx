@@ -5,6 +5,8 @@ import { format } from "date-fns";
 import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, Grid3X3, Columns, Square, Plus } from "lucide-react";
 
 import { ThemeToggle } from "../ThemeToggle";
+import { LoginButton } from "../LoginButton";
+import { useAuth } from "@/context/AuthContext";
 
 type ViewType = "month" | "week" | "day";
 
@@ -27,6 +29,8 @@ const CalendarHeader: React.FC<CalendarHeaderProps> = ({
   onToday,
   onAddEvent,
 }) => {
+  const { role } = useAuth();
+  const isAdmin = role === "ADMIN";
   return (
     <div className="flex items-center justify-between gap-2 p-4 md:p-6 bg-background/80 backdrop-blur-xl sticky top-0 z-40 border-b border-border shadow-sm md:shadow-none">
       <div className="flex items-center gap-3">
@@ -54,7 +58,7 @@ const CalendarHeader: React.FC<CalendarHeaderProps> = ({
           </button>
           <button
             onClick={onToday}
-            className="px-3 py-1.5 md:px-5 md:py-2 text-xs md:text-sm font-bold text-foreground hover:bg-background rounded-lg md:rounded-xl transition-all shadow-sm shadow-black/5 active:scale-95 border border-transparent hover:border-border-theme"
+            className="px-3 py-1.5 md:px-5 md:py-2 text-xs md:text-sm font-bold text-foreground hover:bg-background rounded-lg md:rounded-xl transition-all shadow-sm shadow-black/5 active:scale-95 border border-transparent hover:border-border"
           >
             Today
           </button>
@@ -86,22 +90,21 @@ const CalendarHeader: React.FC<CalendarHeaderProps> = ({
           ))}
         </div>
         
-        {/* Theme Toggle Button */}
-        <div className="ml-1 md:ml-2">
+        {/* Admin Create Event Action */}
+        {isAdmin && (
+          <button 
+            onClick={onAddEvent}
+            className="flex items-center justify-center gap-2 px-3 md:px-5 py-2 md:py-2.5 bg-primary text-primary-foreground font-black text-xs md:text-sm rounded-xl md:rounded-2xl shadow-lg shadow-primary/30 hover:opacity-90 active:scale-95 transition-all ml-1 md:ml-2"
+          >
+             <Plus className="w-5 h-5 md:w-4 md:h-4 stroke-[3px] md:stroke-2" />
+             <span className="hidden md:inline">Create Event</span>
+          </button>
+        )}
+
+        <div className="flex items-center gap-1 md:gap-2 ml-1">
           <ThemeToggle />
+          <LoginButton />
         </div>
-        
-        {/* Responsive Add Event Button 
-            TODO (Phase 2): Re-enable this button once User Authentication is implemented.
-            The public default view should be read-only for now.
-        <button 
-          onClick={onAddEvent}
-          className="flex items-center justify-center gap-2 ml-1 md:ml-2 p-2 md:px-6 md:py-2.5 bg-indigo-600 text-white font-bold text-sm rounded-xl shadow-lg shadow-indigo-500/30 hover:bg-indigo-700 active:scale-95 transition-all shrink-0"
-        >
-           <Plus className="w-5 h-5 md:w-4 md:h-4"/>
-           <span className="hidden md:inline">New Event</span>
-        </button>
-        */}
       </div>
     </div>
   );

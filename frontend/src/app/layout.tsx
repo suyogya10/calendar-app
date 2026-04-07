@@ -26,6 +26,8 @@ export const metadata: Metadata = {
 };
 
 import { ThemeProvider } from "@/components/ThemeProvider";
+import { AuthProvider } from "@/context/AuthContext";
+import { ConfigProvider } from "@/context/ConfigContext";
 
 export default function RootLayout({
   children,
@@ -43,7 +45,11 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange={false} // Allow transitions on theme toggle
         >
-          {children}
+          <AuthProvider>
+            <ConfigProvider>
+              {children}
+            </ConfigProvider>
+          </AuthProvider>
         </ThemeProvider>
         <script
           dangerouslySetInnerHTML={{

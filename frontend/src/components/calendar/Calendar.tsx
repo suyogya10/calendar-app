@@ -9,8 +9,7 @@ import CalendarBottomNav from "./CalendarBottomNav";
 import MonthView from "./MonthView";
 import WeekView from "./WeekView";
 import DayView from "./DayView";
-
-import EventModal from "./EventModal";
+import { EventModal } from "./EventModal";
 
 type ViewType = "month" | "week" | "day";
 
@@ -19,6 +18,14 @@ const Calendar: React.FC = () => {
   const [view, setView] = useState<ViewType>("month");
   const [direction, setDirection] = useState(0);
   const [isEventModalOpen, setIsEventModalOpen] = useState(false);
+  const [selectedDate, setSelectedDate] = useState(new Date());
+  const [selectedTime, setSelectedTime] = useState<string | undefined>();
+
+  const openEventModal = (date: Date, time?: string) => {
+    setSelectedDate(date);
+    setSelectedTime(time);
+    setIsEventModalOpen(true);
+  };
 
   const next = () => {
     setDirection(1);
@@ -42,30 +49,26 @@ const Calendar: React.FC = () => {
   const handlers = useSwipeable({
     onSwipedLeft: () => next(),
     onSwipedRight: () => prev(),
-    delta: 50, // require at least 50px swipe
+    delta: 50,
     preventScrollOnSwipe: false,
-    trackMouse: true, // Enables mouse dragging on desktop
+    trackMouse: true,
   });
 
   const variants = {
-    enter: (direction: number) => {
-      return {
-        x: direction > 0 ? 100 : direction < 0 ? -100 : 0,
-        opacity: 0
-      };
-    },
+    enter: (direction: number) => ({
+      x: direction > 0 ? 100 : direction < 0 ? -100 : 0,
+      opacity: 0
+    }),
     center: {
       zIndex: 1,
       x: 0,
       opacity: 1
     },
-    exit: (direction: number) => {
-      return {
-        zIndex: 0,
-        x: direction < 0 ? 100 : direction > 0 ? -100 : 0,
-        opacity: 0
-      };
-    }
+    exit: (direction: number) => ({
+      zIndex: 0,
+      x: direction < 0 ? 100 : direction > 0 ? -100 : 0,
+      opacity: 0
+    })
   };
 
   return (
@@ -77,7 +80,7 @@ const Calendar: React.FC = () => {
         onNext={next}
         onPrev={prev}
         onToday={today}
-        onAddEvent={() => setIsEventModalOpen(true)}
+        onAddEvent={() => openEventModal(currentDate)}
       />
       
       <main {...handlers} className="flex-1 flex overflow-hidden w-full relative">
@@ -95,9 +98,9 @@ const Calendar: React.FC = () => {
             }}
             className="flex-1 w-full h-full absolute inset-0"
           >
-            {view === "month" && <MonthView currentDate={currentDate} />}
-            {view === "week" && <WeekView currentDate={currentDate} />}
-            {view === "day" && <DayView currentDate={currentDate} />}
+            {view === "month" && <MonthView currentDate={currentDate} onDateClick={(d) => openEventModal(d)} />}
+            {view === "week" && <WeekView currentDate={currentDate} onSlotClick={(d, t) => openEventModal(d, t)} />}
+            {view === "day" && <DayView currentDate={currentDate} onSlotClick={(d, t) => openEventModal(d, t)} />}
           </motion.div>
         </AnimatePresence>
       </main>
@@ -107,7 +110,8 @@ const Calendar: React.FC = () => {
       <EventModal 
         isOpen={isEventModalOpen} 
         onClose={() => setIsEventModalOpen(false)} 
-        selectedDate={currentDate} 
+        selectedDate={selectedDate}
+        initialTime={selectedTime}
       />
     </div>
   );
