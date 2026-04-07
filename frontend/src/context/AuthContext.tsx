@@ -1,12 +1,13 @@
 "use client";
 
 import React, { createContext, useContext, useState, useEffect } from "react";
+import { fetchApi } from "@/lib/api";
 
 type Role = "GUEST" | "ADMIN";
 
 interface AuthContextType {
   role: Role;
-  login: (asAdmin: boolean) => void;
+  login: (token: string, asAdmin: boolean) => void;
   logout: () => void;
 }
 
@@ -16,22 +17,29 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [role, setRole] = useState<Role>("GUEST");
 
   useEffect(() => {
-    // Attempt to read from localStorage just for persistence during dev
-    const savedRole = localStorage.getItem("mock_role") as Role;
-    if (savedRole && (savedRole === "ADMIN" || savedRole === "GUEST")) {
-      setRole(savedRole);
+    const token = localStorage.getItem("auth_token");
+    if (token) {
+      // Validate token seamlessly
+      fetchApi("/user").then((user) => {
+        if (user && user.is_admin) {
+          setRole("ADMIN");
+        }
+      }).catch(() => {
+        localStorage.removeItem("auth_token");
+        setRole("GUEST");
+      });
     }
   }, []);
 
-  const login = (asAdmin: boolean) => {
-    const newRole = asAdmin ? "ADMIN" : "GUEST";
-    setRole(newRole);
-    localStorage.setItem("mock_role", newRole);
+  const login = (token: string, asAdmin: boolean) => {
+    localStorage.setItem("auth_token", token);
+    setRole(asAdmin ? "ADMIN" : "GUEST");
   };
 
   const logout = () => {
+    fetchApi("/logout", { method: "POST" }).catch(() => {});
     setRole("GUEST");
-    localStorage.removeItem("mock_role");
+    localStorage.removeItem("auth_token");
   };
 
   return (

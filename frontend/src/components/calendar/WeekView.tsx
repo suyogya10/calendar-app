@@ -17,7 +17,7 @@ interface WeekViewProps {
 }
 
 const WeekView: React.FC<WeekViewProps> = ({ currentDate, onSlotClick }) => {
-  const { getHolidayStatus } = useConfig();
+  const { getHolidayStatus, apiEvents } = useConfig();
   const { role } = useAuth();
   const isAdmin = role === "ADMIN";
 
@@ -25,11 +25,7 @@ const WeekView: React.FC<WeekViewProps> = ({ currentDate, onSlotClick }) => {
   const weekEnd = endOfWeek(currentDate);
   const timeContainerRef = useRef<HTMLDivElement>(null);
   
-  const daysInWeek = eachDayOfInterval({
-    start: weekStart,
-    end: weekEnd,
-  });
-
+  const daysInWeek = eachDayOfInterval({ start: weekStart, end: weekEnd });
   const hoursInDay = Array.from({ length: 24 }, (_, i) => i);
 
   useEffect(() => {
@@ -64,15 +60,11 @@ const WeekView: React.FC<WeekViewProps> = ({ currentDate, onSlotClick }) => {
                 return (
                   <div 
                     key={day.toString()} 
-                    className={`flex flex-col items-center justify-center py-3 border-r border-border last:border-r-0 ${
-                      isFullHoliday ? 'bg-holiday-bg/50' : ''
-                    }`}
+                    className={`flex flex-col items-center justify-center py-3 border-r border-border last:border-r-0 ${isFullHoliday ? 'bg-holiday-bg/50' : ''}`}
                     style={isHalfHoliday ? { backgroundColor: `${status.config?.color}15` } : {}}
                   >
                     <span 
-                      className={`text-[10px] font-bold uppercase tracking-widest mb-1 ${
-                        isFullHoliday ? 'text-holiday' : 'text-muted-foreground'
-                      }`}
+                      className={`text-[10px] font-bold uppercase tracking-widest mb-1 ${isFullHoliday ? 'text-holiday' : 'text-muted-foreground'}`}
                       style={isHalfHoliday ? { color: status.config?.color } : {}}
                     >
                       {format(day, "EEE")}
@@ -116,13 +108,12 @@ const WeekView: React.FC<WeekViewProps> = ({ currentDate, onSlotClick }) => {
                  const status = getHolidayStatus(day);
                  const isFullHoliday = status.type === "FULL";
                  const isHalfHoliday = status.type === "HALF";
+                 const dayStr = format(day, "yyyy-MM-dd");
                  
                  return (
                    <div 
                      key={day.toString()} 
-                     className={`relative border-r border-border last:border-r-0 h-full ${
-                       isFullHoliday ? 'bg-holiday-bg/20' : ''
-                     }`}
+                     className={`relative border-r border-border last:border-r-0 h-full ${isFullHoliday ? 'bg-holiday-bg/20' : ''}`}
                      style={isHalfHoliday ? { backgroundColor: `${status.config?.color}08` } : {}}
                    >
                      {isToday(day) && (
@@ -154,13 +145,27 @@ const WeekView: React.FC<WeekViewProps> = ({ currentDate, onSlotClick }) => {
                        );
                      })()}
                      
-                     {/* Placeholder Event */}
-                     {isToday(day) && (
-                        <div className="absolute top-[800px] left-1 right-1 h-[80px] bg-primary rounded-lg md:rounded-xl shadow-lg shadow-primary/20 p-1.5 md:p-2 text-primary-foreground overflow-hidden ring-1 ring-white/20 active:scale-95 transition-transform cursor-pointer z-20">
-                           <span className="block opacity-80 text-[9px] font-bold">10 AM</span>
-                           <span className="block text-xs font-black leading-tight truncate">Sync</span>
-                        </div>
-                     )}
+                     {/* Real API Events */}
+                     {apiEvents
+                       .filter(e => e.start_time.startsWith(dayStr))
+                       .map(event => {
+                         const startDate = new Date(event.start_time);
+                         const endDate = event.end_time ? new Date(event.end_time) : new Date(startDate.getTime() + 3600000);
+                         const top = (startDate.getHours() * 60 + startDate.getMinutes()) / 60 * 80;
+                         const height = Math.max(40, (endDate.getTime() - startDate.getTime()) / 3600000 * 80);
+                         return (
+                           <div
+                             key={event.id}
+                             className="absolute left-1 right-1 bg-primary rounded-lg shadow-lg shadow-primary/20 p-1.5 text-primary-foreground overflow-hidden ring-1 ring-white/20 cursor-pointer z-20 active:scale-95 transition-transform"
+                             style={{ top: `${top}px`, height: `${height}px` }}
+                             title={event.title}
+                           >
+                             {!event.is_all_day && <span className="block opacity-80 text-[9px] font-bold">{format(startDate, 'h:mm a')}</span>}
+                             <span className="block text-xs font-black leading-tight truncate">{event.title}</span>
+                           </div>
+                         );
+                       })
+                     }
                   </div>
                  );
                })}

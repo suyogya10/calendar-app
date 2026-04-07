@@ -26,9 +26,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   useEffect(() => {
     setMounted(true);
-    // Simple protection for mock layout
-    const savedRole = localStorage.getItem("mock_role");
-    if (savedRole !== "ADMIN") {
+    const token = localStorage.getItem("auth_token");
+    if (!token) {
       router.push("/");
     }
   }, [router]);

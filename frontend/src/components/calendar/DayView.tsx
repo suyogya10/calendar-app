@@ -11,7 +11,7 @@ interface DayViewProps {
 }
 
 const DayView: React.FC<DayViewProps> = ({ currentDate, onSlotClick }) => {
-  const { getHolidayStatus } = useConfig();
+  const { getHolidayStatus, apiEvents, apiHolidays } = useConfig();
   const { role } = useAuth();
   const isAdmin = role === "ADMIN";
 
@@ -21,6 +21,10 @@ const DayView: React.FC<DayViewProps> = ({ currentDate, onSlotClick }) => {
   const isFullHoliday = status.type === "FULL";
   const isHalfHoliday = status.type === "HALF";
   const scrollRef = useRef<HTMLDivElement>(null);
+  const dayStr = format(currentDate, "yyyy-MM-dd");
+
+  const todayHoliday = apiHolidays.find(h => h.date === dayStr);
+  const todayEvents = apiEvents.filter(e => e.start_time.startsWith(dayStr));
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -59,12 +63,17 @@ const DayView: React.FC<DayViewProps> = ({ currentDate, onSlotClick }) => {
           <h2 className="text-lg md:text-2xl font-black text-foreground tracking-tight leading-tight">
              {format(currentDate, "MMMM d, yyyy")}
           </h2>
+          {todayHoliday && (
+            <span className="text-xs font-bold text-holiday bg-holiday/10 px-2 py-0.5 rounded mt-1 w-fit">
+              🎉 {todayHoliday.title} {todayHoliday.bs_date_nepali && `(${todayHoliday.bs_date_nepali})`}
+            </span>
+          )}
           <p className="text-xs md:text-sm font-semibold mt-0.5" style={{ color: isHalfHoliday ? status.config?.color : undefined }}>
             {isFullHoliday 
               ? "🔴 Full Holiday" 
               : isHalfHoliday 
                 ? `🟡 Half Day — Work hours: ${status.config?.start} – ${status.config?.end}`
-                : isTodayDate ? "2 events scheduled" : "No events scheduled"}
+                : todayEvents.length > 0 ? `${todayEvents.length} event${todayEvents.length > 1 ? 's' : ''} scheduled` : "No events scheduled"}
             {isAdmin && !isFullHoliday && <span className="ml-2 text-primary/60 text-[10px] font-bold uppercase tracking-widest hidden md:inline">Click any slot to add event</span>}
           </p>
         </div>
@@ -143,22 +152,32 @@ const DayView: React.FC<DayViewProps> = ({ currentDate, onSlotClick }) => {
                );
              })}
 
-             {/* Events layer */}
+             {/* Real API Events */}
              <div className="relative h-full z-[15] ml-2 md:ml-4">
-                {isTodayDate && (
-                  <>
-                    <div className="absolute top-[320px] left-0 right-0 h-[80px] bg-secondary text-secondary-foreground rounded-xl shadow-md shadow-secondary/20 p-3 ring-2 ring-background cursor-pointer active:scale-[0.98] transition-transform">
-                      <span className="text-[9px] md:text-[10px] font-bold opacity-90 uppercase tracking-wider mb-0.5">04:00 AM - 05:00 AM</span>
-                      <h3 className="text-sm md:text-base font-black leading-tight">Server Maintenance</h3>
-                    </div>
-
-                    <div className="absolute top-[800px] left-0 right-0 h-[160px] bg-accent text-primary-foreground rounded-xl shadow-md shadow-accent/20 p-3 ring-2 ring-background mt-1 cursor-pointer active:scale-[0.98] transition-transform">
-                      <span className="text-[9px] md:text-[10px] font-bold opacity-90 uppercase tracking-wider mb-0.5">10:00 AM - 12:00 PM</span>
-                      <h3 className="text-sm md:text-base font-black leading-tight">Design Review sync</h3>
-                      <p className="text-[10px] md:text-xs font-semibold opacity-90 mt-1">Google Meet</p>
-                    </div>
-                  </>
-                )}
+               {todayEvents.map(event => {
+                 const startDate = new Date(event.start_time);
+                 const endDate = event.end_time ? new Date(event.end_time) : new Date(startDate.getTime() + 3600000);
+                 const top = (startDate.getHours() * 60 + startDate.getMinutes()) / 60 * 80;
+                 const height = Math.max(50, (endDate.getTime() - startDate.getTime()) / 3600000 * 80);
+                 return (
+                   <div
+                     key={event.id}
+                     className="absolute left-0 right-0 bg-primary text-primary-foreground rounded-xl shadow-md shadow-primary/20 p-3 ring-2 ring-background cursor-pointer active:scale-[0.98] transition-transform"
+                     style={{ top: `${top}px`, height: `${height}px` }}
+                   >
+                     {!event.is_all_day && (
+                       <span className="text-[9px] md:text-[10px] font-bold opacity-90 uppercase tracking-wider mb-0.5 block">
+                         {format(startDate, 'hh:mm a')} - {format(endDate, 'hh:mm a')}
+                       </span>
+                     )}
+                     {event.is_all_day && (
+                       <span className="text-[9px] md:text-[10px] font-bold opacity-90 uppercase tracking-wider mb-0.5 block">All Day</span>
+                     )}
+                     <h3 className="text-sm md:text-base font-black leading-tight">{event.title}</h3>
+                     {event.description && <p className="text-[10px] md:text-xs font-semibold opacity-90 mt-1 truncate">{event.description}</p>}
+                   </div>
+                 );
+               })}
              </div>
           </div>
         </div>

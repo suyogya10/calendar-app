@@ -20,7 +20,7 @@ interface MonthViewProps {
 }
 
 const MonthView: React.FC<MonthViewProps> = ({ currentDate, onDateClick }) => {
-  const { getHolidayStatus, holidays, halfHolidays } = useConfig();
+  const { getHolidayStatus, holidays, halfHolidays, apiEvents, apiHolidays } = useConfig();
   const { role } = useAuth();
   const isAdmin = role === "ADMIN";
 
@@ -104,19 +104,29 @@ const MonthView: React.FC<MonthViewProps> = ({ currentDate, onDateClick }) => {
                 </span>
               </div>
               
-              <div className="flex-1 flex flex-col gap-1 items-center md:items-stretch overflow-hidden">
-                {/* Placeholder for events */}
-                {isTodayDate && (
-                  <>
-                    {/* Mobile dot indicator */}
-                    <div className="md:hidden w-1.5 h-1.5 rounded-full bg-secondary mt-0.5" title="Secondary Brand Color Action"></div>
-                    
-                    {/* Desktop text indicator */}
-                    <div className="hidden md:block px-2 py-1 bg-primary/10 text-[10px] font-bold text-primary rounded-lg border border-primary/20 truncate w-full">
-                       Team Sync
+              <div className="flex-1 flex flex-col gap-1 items-center md:items-stretch overflow-hidden overflow-y-auto custom-scrollbar relative z-10">
+                {/* Specific DB Holidays */}
+                {apiHolidays
+                  .filter(h => h.date === format(day, "yyyy-MM-dd"))
+                  .map(holiday => (
+                    <div key={`h-${holiday.id}`} className="hidden md:block px-2 py-0.5 bg-holiday/10 text-[10px] font-bold text-holiday rounded border border-holiday/20 truncate w-full">
+                      {holiday.title}
                     </div>
-                  </>
-                )}
+                  ))
+                }
+
+                {/* API Events */}
+                {apiEvents
+                  .filter(e => e.start_time.startsWith(format(day, "yyyy-MM-dd")))
+                  .map(event => (
+                    <React.Fragment key={event.id}>
+                      <div className="md:hidden w-1.5 h-1.5 rounded-full bg-primary mt-0.5" title={event.title}></div>
+                      <div className="hidden md:block px-2 py-1 bg-primary/10 text-[10px] font-bold text-primary rounded-lg border border-primary/20 truncate w-full" title={event.title}>
+                        {event.is_all_day ? `All Day: ${event.title}` : event.title}
+                      </div>
+                    </React.Fragment>
+                  ))
+                }
               </div>
               
               <div className="absolute inset-0 bg-primary/[0.02] opacity-0 group-hover:opacity-100 rounded-xl md:rounded-2xl transition-opacity pointer-events-none" />
