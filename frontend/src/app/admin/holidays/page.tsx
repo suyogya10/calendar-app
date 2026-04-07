@@ -28,7 +28,7 @@ const COLORS = [
 ];
 
 export default function AdminHolidaysPage() {
-  const { holidays, halfHolidays, updateHolidays, updateHalfDay } = useConfig();
+  const { holidays, halfHolidays, updateHolidays, updateHalfDay, apiHolidays } = useConfig();
   const [localHolidays, setLocalHolidays] = useState<number[]>(holidays);
   const [localHalfDays, setLocalHalfDays] = useState<Record<number, HalfDayConfig>>(halfHolidays);
   const [isSaved, setIsSaved] = useState(false);
@@ -231,6 +231,77 @@ export default function AdminHolidaysPage() {
                   Full holidays will shade the entire day in Red. Half days will allow events during work hours and record restricted hours visually.
                 </p>
               </div>
+            </div>
+          </div>
+          
+          {/* Specific Holidays Table */}
+          <div className="bg-background border border-border rounded-3xl p-6 shadow-sm mt-6">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-lg font-black text-foreground flex items-center gap-2">
+                <CalendarIcon className="w-5 h-5 text-primary" />
+                Specific Holidays
+              </h2>
+              <button 
+                onClick={() => {
+                  import("@/lib/api").then(({ fetchApi }) => {
+                    fetchApi("/holidays/export-excel").then(blob => {
+                       if (blob instanceof Blob) {
+                         const url = window.URL.createObjectURL(blob);
+                         const link = document.createElement('a');
+                         link.href = url;
+                         link.setAttribute('download', 'holidays.xlsx');
+                         document.body.appendChild(link);
+                         link.click();
+                         link.remove();
+                       }
+                    }).catch(console.error);
+                  });
+                }}
+                className="text-[10px] bg-muted px-3 py-1.5 rounded uppercase font-bold tracking-wider hover:bg-muted/80"
+              >
+                Export Excel
+              </button>
+            </div>
+            
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="border-b border-border bg-muted/30 text-[10px] uppercase tracking-wider text-muted-foreground font-black">
+                    <th className="p-2">Title</th>
+                    <th className="p-2">Date (AD)</th>
+                    <th className="p-2">Date (BS)</th>
+                    <th className="p-2 text-right">Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {apiHolidays.map(hol => (
+                    <tr key={hol.id} className="border-b border-border/50 hover:bg-muted/10 transition-colors">
+                      <td className="p-2 text-xs font-bold">{hol.title}</td>
+                      <td className="p-2 text-xs text-muted-foreground">{hol.date}</td>
+                      <td className="p-2 text-xs text-muted-foreground">{hol.bs_date_nepali}</td>
+                      <td className="p-2 text-right">
+                        <button 
+                          onClick={() => {
+                            if (!confirm("Delete holiday?")) return;
+                            import("@/lib/api").then(({ fetchApi }) => {
+                              fetchApi(`/holidays/${hol.id}`, { method: "DELETE" })
+                                .then(() => window.location.reload());
+                            });
+                          }}
+                          className="text-red-500 hover:text-red-700 text-xs font-semibold"
+                        >
+                          Del
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                  {apiHolidays.length === 0 && (
+                    <tr>
+                      <td colSpan={4} className="text-center p-4 text-xs text-muted-foreground">No specific holidays found from API.</td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
             </div>
           </div>
         </div>
