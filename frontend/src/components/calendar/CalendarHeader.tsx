@@ -4,6 +4,8 @@ import React from "react";
 import { format } from "date-fns";
 import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, Grid3X3, Columns, Square, Plus } from "lucide-react";
 
+import { ThemeToggle } from "../ThemeToggle";
+
 type ViewType = "month" | "week" | "day";
 
 interface CalendarHeaderProps {
@@ -26,16 +28,16 @@ const CalendarHeader: React.FC<CalendarHeaderProps> = ({
   onAddEvent,
 }) => {
   return (
-    <div className="flex items-center justify-between gap-2 p-4 md:p-6 bg-white/80 backdrop-blur-xl sticky top-0 z-40 border-b border-zinc-200/60 shadow-sm md:shadow-none">
+    <div className="flex items-center justify-between gap-2 p-4 md:p-6 bg-background/80 backdrop-blur-xl sticky top-0 z-40 border-b border-border shadow-sm md:shadow-none">
       <div className="flex items-center gap-3">
-        <div className="p-2 md:p-3 bg-gradient-to-br from-indigo-500 to-indigo-700 rounded-xl md:rounded-2xl shadow-lg shadow-indigo-500/30">
-          <CalendarIcon className="w-5 h-5 text-white" />
+        <div className="p-2 md:p-3 bg-gradient-to-br from-primary to-primary/80 rounded-xl md:rounded-2xl shadow-lg shadow-primary/30 text-primary-foreground">
+          <CalendarIcon className="w-5 h-5" />
         </div>
         <div>
-          <h1 className="text-xl md:text-2xl font-black text-zinc-900 tracking-tighter leading-none">
+          <h1 className="text-xl md:text-2xl font-black text-foreground tracking-tighter leading-none">
             {format(currentDate, "MMMM yyyy")}
           </h1>
-          <p className="text-[9px] md:text-[10px] font-black text-indigo-500/70 uppercase tracking-[0.2em] mt-0.5">
+          <p className="text-[9px] md:text-[10px] font-black text-primary/70 uppercase tracking-[0.2em] mt-0.5">
             {view} view
           </p>
         </div>
@@ -43,37 +45,37 @@ const CalendarHeader: React.FC<CalendarHeaderProps> = ({
 
       <div className="flex items-center gap-2">
         {/* Navigation Controls */}
-        <div className="flex items-center gap-1 bg-zinc-100/80 p-1 md:p-1.5 rounded-xl md:rounded-2xl border border-zinc-200/50">
+        <div className="flex items-center gap-1 bg-muted p-1 md:p-1.5 rounded-xl md:rounded-2xl border border-border">
           <button
             onClick={onPrev}
-            className="p-1.5 md:p-2 hover:bg-white rounded-lg md:rounded-xl transition-all active:scale-90 text-zinc-500 hover:text-zinc-900"
+            className="p-1.5 md:p-2 hover:bg-background rounded-lg md:rounded-xl transition-all active:scale-90 text-muted-foreground hover:text-foreground"
           >
             <ChevronLeft className="w-4 h-4 md:w-5 md:h-5" />
           </button>
           <button
             onClick={onToday}
-            className="px-3 py-1.5 md:px-5 md:py-2 text-xs md:text-sm font-bold text-zinc-700 hover:bg-white rounded-lg md:rounded-xl transition-all shadow-sm shadow-black/5 active:scale-95"
+            className="px-3 py-1.5 md:px-5 md:py-2 text-xs md:text-sm font-bold text-foreground hover:bg-background rounded-lg md:rounded-xl transition-all shadow-sm shadow-black/5 active:scale-95 border border-transparent hover:border-border-theme"
           >
             Today
           </button>
           <button
             onClick={onNext}
-            className="p-1.5 md:p-2 hover:bg-white rounded-lg md:rounded-xl transition-all active:scale-90 text-zinc-500 hover:text-zinc-900"
+            className="p-1.5 md:p-2 hover:bg-background rounded-lg md:rounded-xl transition-all active:scale-90 text-muted-foreground hover:text-foreground"
           >
             <ChevronRight className="w-4 h-4 md:w-5 md:h-5" />
           </button>
         </div>
 
         {/* Desktop View Switcher */}
-        <div className="hidden md:flex items-center gap-1 bg-zinc-100/80 p-1.5 rounded-2xl border border-zinc-200/50">
+        <div className="hidden md:flex items-center gap-1 bg-muted p-1.5 rounded-2xl border border-border">
           {(["month", "week", "day"] as ViewType[]).map((v) => (
             <button
               key={v}
               onClick={() => setView(v)}
               className={`flex items-center gap-2 px-4 py-2.5 rounded-xl transition-all text-xs font-black uppercase tracking-widest ${
                 view === v
-                  ? "bg-white text-indigo-600 shadow-xl shadow-black/5 ring-1 ring-black/5"
-                  : "text-zinc-500 hover:text-zinc-800"
+                  ? "bg-background text-primary shadow-xl shadow-black/5 ring-1 ring-border"
+                  : "text-muted-foreground hover:text-foreground"
               }`}
             >
               {v === "month" && <Grid3X3 className="w-3.5 h-3.5" />}
@@ -82,6 +84,11 @@ const CalendarHeader: React.FC<CalendarHeaderProps> = ({
               <span>{v}</span>
             </button>
           ))}
+        </div>
+        
+        {/* Theme Toggle Button */}
+        <div className="ml-1 md:ml-2">
+          <ThemeToggle />
         </div>
         
         {/* Responsive Add Event Button 

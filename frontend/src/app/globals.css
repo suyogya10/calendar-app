@@ -2,27 +2,71 @@
 
 :root {
   --background: #fdfdfd;
-  --foreground: #09090b;
+  --foreground: #0f172a;
+  
+  --brand-blue: #2d3891;
+  --brand-green: #8fc742;
+  --brand-orange: #fcb446;
+
+  /* Semantic UI Colors - Light */
+  --primary: var(--brand-blue);
+  --primary-foreground: #ffffff;
+  
+  --secondary: var(--brand-green);
+  --accent: var(--brand-orange);
+  
   --card: #ffffff;
+  --muted: #f4f4f5;
+  --muted-foreground: #71717a;
   --border: #e4e4e7;
-  --indigo-500: #6366f1;
-  --indigo-600: #4f46e5;
-  --zinc-100: #f4f4f5;
-  --zinc-200: #e4e4e7;
-  --zinc-400: #a1a1aa;
-  --zinc-500: #71717a;
-  --zinc-800: #27272a;
+  
+  --holiday: #dc2626;
+  --holiday-bg: #fef2f2;
+}
+
+.dark {
+  /* Catppuccin Macchiato Base */
+  --background: #24273a; /* Base */
+  --foreground: #cad3f5; /* Text */
+
+  /* Semantic UI Colors - Dark (Catppuccin + Brand) */
+  --primary: #8aadf4; /* Catppuccin Blue (closely related to brand blue but palettes-native) */
+  --primary-foreground: #24273a;
+  
+  --secondary: #a6da95; /* Catppuccin Green (related to brand green) */
+  --accent: #f5a97f; /* Catppuccin Peach (related to brand orange) */
+  
+  --card: #1e2030; /* Mantle */
+  --muted: #363a4f; /* Surface 0 */
+  --muted-foreground: #b8c0e0; /* Subtext 1 */
+  --border: #494d64; /* Surface 1 */
+  
+  --holiday: #ed8796; /* Catppuccin Red */
+  --holiday-bg: #3b222a; /* Custom dark red mix */
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  
+  --color-secondary: var(--secondary);
+  --color-accent: var(--accent);
+  
   --color-card: var(--card);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
   --color-border: var(--border);
-}
+  
+  --color-holiday: var(--holiday);
+  --color-holiday-bg: var(--holiday-bg);
 
-html {
-  color-scheme: light;
+  --color-brand-blue: var(--brand-blue);
+  --brand-blue: var(--brand-blue);
+  --color-brand-green: var(--brand-green);
+  --color-brand-orange: var(--brand-orange);
 }
 
 body {

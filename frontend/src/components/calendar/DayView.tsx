@@ -25,24 +25,24 @@ const DayView: React.FC<DayViewProps> = ({ currentDate }) => {
   }, [currentDate]);
 
   return (
-    <div className="flex flex-col h-full animate-in slide-in-from-right-4 duration-300 overflow-hidden bg-white">
+    <div className="flex flex-col h-full animate-in slide-in-from-right-4 duration-300 overflow-hidden bg-background">
       {/* Mobile-optimized Header */}
-      <div className={`flex-none flex items-center gap-4 p-4 md:p-6 border-b border-zinc-100 ${isHoliday ? 'bg-red-50/20' : 'bg-zinc-50/50'}`}>
+      <div className={`flex-none flex items-center gap-4 p-4 md:p-6 border-b border-border-theme ${isHoliday ? 'bg-holiday-bg/30' : 'bg-muted/50'}`}>
         <div className={`flex flex-col items-center justify-center h-16 w-16 md:h-20 md:w-20 shrink-0 rounded-2xl shadow-sm transition-all ${
           isTodayDate 
-            ? "bg-indigo-600 text-white shadow-indigo-500/30 md:scale-105" 
+            ? "bg-primary text-primary-foreground shadow-primary/30 md:scale-105" 
             : isHoliday
-            ? "bg-red-50 text-red-600 ring-1 ring-red-200"
-            : "bg-white text-zinc-900 ring-1 ring-zinc-200"
+            ? "bg-holiday-bg text-holiday ring-1 ring-holiday/20"
+            : "bg-background text-foreground ring-1 ring-border-theme"
         }`}>
           <span className="text-[10px] md:text-[11px] font-bold uppercase tracking-widest opacity-90">{format(currentDate, "EEE")}</span>
           <span className="text-2xl md:text-3xl font-black">{format(currentDate, "d")}</span>
         </div>
         <div className="flex flex-col justify-center">
-          <h2 className="text-lg md:text-2xl font-black text-zinc-900 tracking-tight leading-tight">
+          <h2 className="text-lg md:text-2xl font-black text-foreground tracking-tight leading-tight">
              {format(currentDate, "MMMM d, yyyy")}
           </h2>
-          <p className="text-xs md:text-sm font-semibold text-zinc-400 mt-0.5">
+          <p className="text-xs md:text-sm font-semibold text-muted-foreground mt-0.5">
              2 events scheduled
           </p>
         </div>
@@ -51,10 +51,10 @@ const DayView: React.FC<DayViewProps> = ({ currentDate }) => {
       <div className="flex-1 overflow-y-auto custom-scrollbar relative" ref={scrollRef}>
         <div className="flex min-h-[1920px]">
           {/* Time sidebar */}
-          <div className={`w-16 md:w-24 shrink-0 flex flex-col border-r border-zinc-100 ${isHoliday ? 'bg-red-50/30' : 'bg-zinc-50/30'}`}>
+          <div className={`w-16 md:w-24 shrink-0 flex flex-col border-r border-border-theme ${isHoliday ? 'bg-holiday-bg/20' : 'bg-muted/30'}`}>
             {hoursInDay.map((hour) => (
               <div key={hour} className="h-[80px] relative text-right pr-2">
-                <span className="absolute -top-2.5 right-2 md:right-4 text-[10px] md:text-xs font-bold text-zinc-400 tracking-wider bg-white rounded px-1">
+                <span className="absolute -top-2.5 right-2 md:right-4 text-[10px] md:text-xs font-bold text-muted-foreground tracking-wider bg-background px-1">
                    {format(new Date().setHours(hour, 0), "h a")}
                 </span>
               </div>
@@ -66,7 +66,7 @@ const DayView: React.FC<DayViewProps> = ({ currentDate }) => {
              {/* Hour horizontal guides */}
              <div className="absolute inset-x-0 top-0 bottom-0 flex flex-col pointer-events-none">
                 {hoursInDay.map((hour) => (
-                  <div key={hour} className="h-[80px] border-t border-zinc-100" />
+                  <div key={hour} className="h-[80px] border-t border-border" />
                 ))}
              </div>
              
@@ -85,12 +85,12 @@ const DayView: React.FC<DayViewProps> = ({ currentDate }) => {
                 {/* Sample events */}
                 {isTodayDate && (
                   <>
-                    <div className="absolute top-[320px] left-0 right-0 h-[80px] bg-gradient-to-br from-indigo-500 to-violet-600 rounded-xl shadow-md shadow-indigo-500/20 p-3 text-white ring-2 ring-white cursor-pointer active:scale-[0.98] transition-transform">
+                    <div className="absolute top-[320px] left-0 right-0 h-[80px] bg-secondary text-secondary-foreground rounded-xl shadow-md shadow-secondary/20 p-3 ring-2 ring-background cursor-pointer active:scale-[0.98] transition-transform">
                       <span className="text-[9px] md:text-[10px] font-bold opacity-90 uppercase tracking-wider mb-0.5">04:00 AM - 05:00 AM</span>
                       <h3 className="text-sm md:text-base font-black leading-tight">Server Maintenance</h3>
                     </div>
 
-                    <div className="absolute top-[800px] left-0 right-0 h-[160px] bg-gradient-to-br from-amber-400 to-orange-500 rounded-xl shadow-md shadow-orange-500/20 p-3 text-white ring-2 ring-white mt-1 cursor-pointer active:scale-[0.98] transition-transform">
+                    <div className="absolute top-[800px] left-0 right-0 h-[160px] bg-accent text-primary-foreground rounded-xl shadow-md shadow-accent/20 p-3 ring-2 ring-background mt-1 cursor-pointer active:scale-[0.98] transition-transform">
                       <span className="text-[9px] md:text-[10px] font-bold opacity-90 uppercase tracking-wider mb-0.5">10:00 AM - 12:00 PM</span>
                       <h3 className="text-sm md:text-base font-black leading-tight">Design Review sync</h3>
                       <p className="text-[10px] md:text-xs font-semibold opacity-90 mt-1">Google Meet</p>
