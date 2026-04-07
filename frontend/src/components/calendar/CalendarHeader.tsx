@@ -13,6 +13,7 @@ interface CalendarHeaderProps {
   onPrev: () => void;
   onNext: () => void;
   onToday: () => void;
+  onAddEvent: () => void;
 }
 
 const CalendarHeader: React.FC<CalendarHeaderProps> = ({
@@ -22,6 +23,7 @@ const CalendarHeader: React.FC<CalendarHeaderProps> = ({
   onPrev,
   onNext,
   onToday,
+  onAddEvent,
 }) => {
   return (
     <div className="flex items-center justify-between gap-2 p-4 md:p-6 bg-white/80 backdrop-blur-xl sticky top-0 z-40 border-b border-zinc-200/60 shadow-sm md:shadow-none">
@@ -82,10 +84,17 @@ const CalendarHeader: React.FC<CalendarHeaderProps> = ({
           ))}
         </div>
         
-        {/* Mobile quick add button - optional since we have center bottom nav + */}
-        <button className="md:hidden ml-1 p-2 bg-indigo-600 text-white rounded-xl shadow-lg shadow-indigo-500/20 active:scale-95 transition-all">
-           <Plus className="w-5 h-5"/>
+        {/* Responsive Add Event Button 
+            TODO (Phase 2): Re-enable this button once User Authentication is implemented.
+            The public default view should be read-only for now.
+        <button 
+          onClick={onAddEvent}
+          className="flex items-center justify-center gap-2 ml-1 md:ml-2 p-2 md:px-6 md:py-2.5 bg-indigo-600 text-white font-bold text-sm rounded-xl shadow-lg shadow-indigo-500/30 hover:bg-indigo-700 active:scale-95 transition-all shrink-0"
+        >
+           <Plus className="w-5 h-5 md:w-4 md:h-4"/>
+           <span className="hidden md:inline">New Event</span>
         </button>
+        */}
       </div>
     </div>
   );

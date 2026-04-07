@@ -10,12 +10,15 @@ import MonthView from "./MonthView";
 import WeekView from "./WeekView";
 import DayView from "./DayView";
 
+import EventModal from "./EventModal";
+
 type ViewType = "month" | "week" | "day";
 
 const Calendar: React.FC = () => {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [view, setView] = useState<ViewType>("month");
   const [direction, setDirection] = useState(0);
+  const [isEventModalOpen, setIsEventModalOpen] = useState(false);
 
   const next = () => {
     setDirection(1);
@@ -74,6 +77,7 @@ const Calendar: React.FC = () => {
         onNext={next}
         onPrev={prev}
         onToday={today}
+        onAddEvent={() => setIsEventModalOpen(true)}
       />
       
       <main {...handlers} className="flex-1 flex overflow-hidden w-full relative">
@@ -99,6 +103,12 @@ const Calendar: React.FC = () => {
       </main>
 
       <CalendarBottomNav view={view} setView={setView} />
+      
+      <EventModal 
+        isOpen={isEventModalOpen} 
+        onClose={() => setIsEventModalOpen(false)} 
+        selectedDate={currentDate} 
+      />
     </div>
   );
 };

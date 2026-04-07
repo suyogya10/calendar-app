@@ -17,6 +17,9 @@ importers:
       lucide-react:
         specifier: ^1.7.0
         version: 1.7.0(react@19.2.4)
+      nepali-datetime:
+        specifier: ^1.6.0
+        version: 1.6.0
       next:
         specifier: 16.2.2
         version: 16.2.2(@babel/core@7.29.0)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
@@ -1576,6 +1579,10 @@ packages:
 
   natural-compare@1.4.0:
     resolution: {integrity: sha512-OWND8ei3VtNC9h7V60qff3SVobHr996CTwgxubgyQYEpg290h9J0buyECNNJexkFm5sOajh5G116RYA1c8ZMSw==}
+
+  nepali-datetime@1.6.0:
+    resolution: {integrity: sha512-bp6c7Q5BMt0TaFKUc3KKnkyH4Eq3sO7iqKSCcrLoRUro9cNI8C7Nj6E3XyawDEs6EbLLHGVBHQYXnshRDmP4Mw==}
+    engines: {node: '>=18'}
 
   next@16.2.2:
     resolution: {integrity: sha512-i6AJdyVa4oQjyvX/6GeER8dpY/xlIV+4NMv/svykcLtURJSy/WzDnnUk/TM4d0uewFHK7xSQz4TbIwPgjky+3A==}
@@ -3574,6 +3581,8 @@ snapshots:
   napi-postinstall@0.3.4: {}
 
   natural-compare@1.4.0: {}
+
+  nepali-datetime@1.6.0: {}
 
   next@16.2.2(@babel/core@7.29.0)(react-dom@19.2.4(react@19.2.4))(react@19.2.4):
     dependencies:
