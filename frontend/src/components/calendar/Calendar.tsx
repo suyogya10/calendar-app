@@ -5,11 +5,11 @@ import { addMonths, addWeeks, addDays, subMonths, subWeeks, subDays } from "date
 import { motion, AnimatePresence } from "framer-motion";
 import { useSwipeable } from "react-swipeable";
 import CalendarHeader from "./CalendarHeader";
-import CalendarBottomNav from "./CalendarBottomNav";
 import MonthView from "./MonthView";
 import WeekView from "./WeekView";
 import DayView from "./DayView";
 import { EventModal } from "./EventModal";
+import { DayDetailsModal } from "./DayDetailsModal";
 
 type ViewType = "month" | "week" | "day";
 
@@ -18,12 +18,19 @@ const Calendar: React.FC = () => {
   const [view, setView] = useState<ViewType>("month");
   const [direction, setDirection] = useState(0);
   const [isEventModalOpen, setIsEventModalOpen] = useState(false);
-  const [selectedDate, setSelectedDate] = useState(new Date());
+  const [isDayDetailsOpen, setIsDayDetailsOpen] = useState(false);
+  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [selectedTime, setSelectedTime] = useState<string | undefined>();
+
+  const openDayDetails = (date: Date) => {
+    setSelectedDate(date);
+    setIsDayDetailsOpen(true);
+  };
 
   const openEventModal = (date: Date, time?: string) => {
     setSelectedDate(date);
     setSelectedTime(time);
+    setIsDayDetailsOpen(false);
     setIsEventModalOpen(true);
   };
 
@@ -72,7 +79,7 @@ const Calendar: React.FC = () => {
   };
 
   return (
-    <div className="flex flex-col h-[100dvh] w-full overflow-hidden bg-background font-sans selection:bg-primary/20 selection:text-primary pb-20 md:pb-0">
+    <div className="flex-1 flex flex-col w-full bg-background font-sans selection:bg-primary/20 selection:text-primary">
       <CalendarHeader
         currentDate={currentDate}
         view={view}
@@ -82,6 +89,8 @@ const Calendar: React.FC = () => {
         onToday={today}
         onAddEvent={() => openEventModal(currentDate)}
       />
+      
+
       
       <main {...handlers} className="flex-1 flex overflow-hidden w-full relative">
         <AnimatePresence initial={false} custom={direction} mode="popLayout">
@@ -98,20 +107,27 @@ const Calendar: React.FC = () => {
             }}
             className="flex-1 w-full h-full absolute inset-0"
           >
-            {view === "month" && <MonthView currentDate={currentDate} onDateClick={(d) => openEventModal(d)} />}
+            {view === "month" && <MonthView currentDate={currentDate} onDateClick={(d) => openDayDetails(d)} />}
             {view === "week" && <WeekView currentDate={currentDate} onSlotClick={(d, t) => openEventModal(d, t)} />}
             {view === "day" && <DayView currentDate={currentDate} onSlotClick={(d, t) => openEventModal(d, t)} />}
           </motion.div>
         </AnimatePresence>
       </main>
 
-      <CalendarBottomNav view={view} setView={setView} />
+
       
       <EventModal 
         isOpen={isEventModalOpen} 
         onClose={() => setIsEventModalOpen(false)} 
         selectedDate={selectedDate}
         initialTime={selectedTime}
+      />
+
+      <DayDetailsModal
+        isOpen={isDayDetailsOpen}
+        onClose={() => setIsDayDetailsOpen(false)}
+        selectedDate={selectedDate}
+        onAddEvent={(d) => openEventModal(d)}
       />
     </div>
   );

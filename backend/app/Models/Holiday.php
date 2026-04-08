@@ -6,14 +6,14 @@ use Illuminate\Database\Eloquent\Model;
 
 class Holiday extends Model
 {
-    protected $fillable = ['title', 'date', 'description'];
+    protected $fillable = ['title', 'date', 'type', 'description'];
     
     protected $appends = ['bs_date', 'bs_date_nepali'];
 
     protected function casts(): array
     {
         return [
-            'date' => 'date',
+            'date' => 'string', // keep as-is to avoid UTC conversion
         ];
     }
     

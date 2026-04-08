@@ -15,13 +15,15 @@ class AuthController extends Controller
     {
         $request->validate([
             'name' => 'required|string|max:255',
-            'email' => 'required|string|email|max:255|unique:users',
+            'employee_id' => 'required|string|max:255|unique:users',
+            'email' => 'nullable|string|email|max:255',
             'password' => 'required|string|min:8|confirmed',
             'is_admin' => 'boolean'
         ]);
 
         $user = User::create([
             'name' => $request->name,
+            'employee_id' => $request->employee_id,
             'email' => $request->email,
             'password' => Hash::make($request->password),
             'is_admin' => $request->is_admin ?? false
@@ -35,15 +37,15 @@ class AuthController extends Controller
     public function login(Request $request)
     {
         $request->validate([
-            'email' => 'required|email',
+            'employee_id' => 'required|string',
             'password' => 'required',
         ]);
 
-        $user = User::where('email', $request->email)->first();
+        $user = User::where('employee_id', $request->employee_id)->first();
 
         if (! $user || ! Hash::check($request->password, $user->password)) {
             throw ValidationException::withMessages([
-                'email' => ['The provided credentials are incorrect.'],
+                'employee_id' => ['The provided credentials are incorrect.'],
             ]);
         }
 

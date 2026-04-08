@@ -8,12 +8,93 @@ import {
   isToday,
   startOfWeek
 } from "date-fns";
-import { useConfig } from "@/context/ConfigContext";
+import { useConfig, ApiEvent } from "@/context/ConfigContext";
 import { useAuth } from "@/context/AuthContext";
 
 interface WeekViewProps {
   currentDate: Date;
   onSlotClick?: (date: Date, time: string) => void;
+}
+
+/** Parse an API datetime string as LOCAL time (no UTC shift) */
+function parseLocal(dtStr: string): Date {
+  const s = dtStr.replace("T", " ").slice(0, 19);
+  const [datePart, timePart = "00:00:00"] = s.split(" ");
+  const [year, month, day] = datePart.split("-").map(Number);
+  const [hour, minute, second] = timePart.split(":").map(Number);
+  return new Date(year, month - 1, day, hour, minute, second);
+}
+
+interface EventLayout {
+  event: ApiEvent;
+  top: number;
+  height: number;
+  col: number;
+  totalCols: number;
+}
+
+/** Assign non-overlapping side-by-side columns to events that share the same time slot */
+function computeLayout(dayEvents: ApiEvent[]): EventLayout[] {
+  if (dayEvents.length === 0) return [];
+
+  interface Slot {
+    event: ApiEvent;
+    startMs: number;
+    endMs: number;
+    col: number;
+    totalCols: number;
+    top: number;
+    height: number;
+  }
+
+  const slots: Slot[] = dayEvents.map(e => {
+    const start = parseLocal(e.start_time);
+    const end = e.end_time ? parseLocal(e.end_time) : new Date(start.getTime() + 3600000);
+    const top = (start.getHours() * 60 + start.getMinutes()) / 60 * 80;
+    const height = Math.max(40, (end.getTime() - start.getTime()) / 3600000 * 80);
+    return { event: e, startMs: start.getTime(), endMs: end.getTime(), col: 0, totalCols: 1, top, height };
+  });
+
+  // Sort by start time
+  slots.sort((a, b) => a.startMs - b.startMs);
+
+  // Greedy column assignment
+  const colEnds: number[] = [];
+  for (const slot of slots) {
+    let placed = false;
+    for (let c = 0; c < colEnds.length; c++) {
+      if (colEnds[c] <= slot.startMs) {
+        colEnds[c] = slot.endMs;
+        slot.col = c;
+        placed = true;
+        break;
+      }
+    }
+    if (!placed) {
+      slot.col = colEnds.length;
+      colEnds.push(slot.endMs);
+    }
+  }
+
+  // Calculate totalCols per event (max col among overlapping peers + 1)
+  for (const slot of slots) {
+    let maxCol = slot.col;
+    for (const other of slots) {
+      if (other === slot) continue;
+      if (other.startMs < slot.endMs && other.endMs > slot.startMs) {
+        maxCol = Math.max(maxCol, other.col);
+      }
+    }
+    slot.totalCols = maxCol + 1;
+  }
+
+  return slots.map(s => ({
+    event: s.event,
+    top: s.top,
+    height: s.height,
+    col: s.col,
+    totalCols: s.totalCols,
+  }));
 }
 
 const WeekView: React.FC<WeekViewProps> = ({ currentDate, onSlotClick }) => {
@@ -109,6 +190,8 @@ const WeekView: React.FC<WeekViewProps> = ({ currentDate, onSlotClick }) => {
                  const isFullHoliday = status.type === "FULL";
                  const isHalfHoliday = status.type === "HALF";
                  const dayStr = format(day, "yyyy-MM-dd");
+                 const dayEvents = apiEvents.filter(e => e.start_time.startsWith(dayStr));
+                 const layouts = computeLayout(dayEvents);
                  
                  return (
                    <div 
@@ -145,27 +228,32 @@ const WeekView: React.FC<WeekViewProps> = ({ currentDate, onSlotClick }) => {
                        );
                      })()}
                      
-                     {/* Real API Events */}
-                     {apiEvents
-                       .filter(e => e.start_time.startsWith(dayStr))
-                       .map(event => {
-                         const startDate = new Date(event.start_time);
-                         const endDate = event.end_time ? new Date(event.end_time) : new Date(startDate.getTime() + 3600000);
-                         const top = (startDate.getHours() * 60 + startDate.getMinutes()) / 60 * 80;
-                         const height = Math.max(40, (endDate.getTime() - startDate.getTime()) / 3600000 * 80);
-                         return (
-                           <div
-                             key={event.id}
-                             className="absolute left-1 right-1 bg-primary rounded-lg shadow-lg shadow-primary/20 p-1.5 text-primary-foreground overflow-hidden ring-1 ring-white/20 cursor-pointer z-20 active:scale-95 transition-transform"
-                             style={{ top: `${top}px`, height: `${height}px` }}
-                             title={event.title}
-                           >
-                             {!event.is_all_day && <span className="block opacity-80 text-[9px] font-bold">{format(startDate, 'h:mm a')}</span>}
-                             <span className="block text-xs font-black leading-tight truncate">{event.title}</span>
-                           </div>
-                         );
-                       })
-                     }
+                     {/* Events — side-by-side within columns */}
+                     {layouts.map(({ event, top, height, col, totalCols }) => {
+                       const startDate = parseLocal(event.start_time);
+                       const widthPct = 100 / totalCols;
+                       const leftPct = col * widthPct;
+                       return (
+                         <div
+                           key={event.id}
+                           className="absolute bg-primary rounded-lg shadow-lg shadow-primary/20 p-1.5 text-primary-foreground overflow-hidden ring-1 ring-white/20 cursor-pointer z-20 active:scale-95 transition-transform"
+                           style={{
+                             top: `${top}px`,
+                             height: `${height}px`,
+                             left: `calc(${leftPct}% + 2px)`,
+                             width: `calc(${widthPct}% - 4px)`,
+                           }}
+                           title={event.title}
+                         >
+                           {!event.is_all_day && (
+                             <span className="block opacity-80 text-[9px] font-bold">
+                               {format(startDate, "h:mm a")}
+                             </span>
+                           )}
+                           <span className="block text-xs font-black leading-tight truncate">{event.title}</span>
+                         </div>
+                       );
+                     })}
                   </div>
                  );
                })}

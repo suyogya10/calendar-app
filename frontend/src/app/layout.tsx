@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import Script from "next/script";
 import { Geist } from "next/font/google";
 import "./globals.css";
 
@@ -28,6 +29,8 @@ export const metadata: Metadata = {
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { AuthProvider } from "@/context/AuthContext";
 import { ConfigProvider } from "@/context/ConfigContext";
+import { ToastProvider } from "@/context/ToastContext";
+import { GlobalHeader } from "@/components/GlobalHeader";
 
 export default function RootLayout({
   children,
@@ -37,6 +40,7 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body
+        suppressHydrationWarning
         className={`${geistSans.variable} min-h-screen flex flex-col antialiased bg-background text-foreground transition-colors duration-500`}
       >
         <ThemeProvider
@@ -47,11 +51,16 @@ export default function RootLayout({
         >
           <AuthProvider>
             <ConfigProvider>
-              {children}
+              <ToastProvider>
+                <GlobalHeader />
+                {children}
+              </ToastProvider>
             </ConfigProvider>
           </AuthProvider>
         </ThemeProvider>
-        <script
+        <Script
+          id="register-sw"
+          strategy="afterInteractive"
           dangerouslySetInnerHTML={{
             __html: `
               if ('serviceWorker' in navigator) {

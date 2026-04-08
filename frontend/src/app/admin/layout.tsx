@@ -13,7 +13,8 @@ import {
   Menu,
   ChevronLeft,
   LogOut,
-  Palmtree
+  Palmtree,
+  Megaphone
 } from "lucide-react";
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -21,26 +22,44 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const [isMobileOpen, setIsMobileOpen] = useState(false);
   const pathname = usePathname();
   const router = useRouter();
-  const { role, logout } = useAuth();
+  const { role, user, isLoading, logout } = useAuth();
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
     setMounted(true);
-    const token = localStorage.getItem("auth_token");
-    if (!token) {
-      router.push("/");
-    }
-  }, [router]);
+  }, []);
 
-  if (!mounted || role !== "ADMIN") return null;
+  useEffect(() => {
+    if (mounted && !isLoading) {
+      const token = localStorage.getItem("auth_token");
+      if (!token || role !== "ADMIN") {
+        router.replace("/");
+      }
+    }
+  }, [mounted, isLoading, role, router]);
+
+  if (!mounted || isLoading) {
+    return (
+      <div className="h-screen w-full flex flex-col items-center justify-center bg-background gap-4">
+        <div className="w-12 h-12 border-4 border-primary/20 border-t-primary rounded-full animate-spin" />
+        <p className="text-sm font-black text-muted-foreground animate-pulse">Authenticating...</p>
+      </div>
+    );
+  }
+
+  if (role !== "ADMIN") return null;
 
   const navItems = [
     { label: "Dashboard", href: "/admin", icon: LayoutDashboard },
     { label: "Events", href: "/admin/events", icon: CalendarIcon },
-    { label: "Holidays", href: "/admin/holidays", icon: Palmtree },
     { label: "Users", href: "/admin/users", icon: Users },
+    { label: "Announcements", href: "/admin/announcements", icon: Megaphone },
     { label: "Settings", href: "/admin/settings", icon: Settings },
   ];
+
+  const getInitials = (name: string) => {
+    return name?.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2) || "AD";
+  };
 
   return (
     <div className="flex h-screen bg-background overflow-hidden selection:bg-primary/20 selection:text-primary">
@@ -138,7 +157,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
         {/* Top Header */}
-        <header className="h-20 bg-background/80 backdrop-blur-xl border-b border-border flex items-center justify-between px-4 md:px-8 shrink-0 z-30">
+            <header className="h-20 bg-background/80 backdrop-blur-xl border-b border-border flex items-center justify-between px-4 md:px-8 shrink-0 z-30">
           <div className="flex items-center gap-4">
             <button 
               onClick={() => setIsMobileOpen(true)}
@@ -154,15 +173,29 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           <div className="flex items-center gap-4">
             <Link 
               href="/"
-              className="text-sm font-bold text-muted-foreground hover:text-primary transition-colors hidden md:block"
+              className="flex items-center gap-2 text-sm font-black text-muted-foreground hover:text-primary transition-colors bg-muted/50 px-3 py-1.5 rounded-xl border border-border"
             >
-              View Public Calendar
+              <ChevronLeft className="w-4 h-4" />
+              Back to Dashboard
             </Link>
             <div className="w-px h-6 bg-border hidden md:block" />
             <ThemeToggle />
+            
+            {/* Mobile/Header Logout */}
+            <button 
+              onClick={() => { logout(); router.push("/"); }}
+              className="p-2 md:p-2.5 rounded-xl bg-holiday/10 text-holiday border border-holiday/20 md:hidden"
+            >
+              <LogOut className="w-4 h-4" />
+            </button>
+
             <div className="flex items-center gap-3 pl-2 md:pl-0">
-               <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center text-primary font-black uppercase text-sm border border-primary/30">
-                 AD
+               <div className="flex flex-col items-end hidden md:flex">
+                 <span className="text-xs font-black text-foreground leading-none">{user?.name}</span>
+                 <span className="text-[10px] font-bold text-muted-foreground tracking-tighter">{user?.employee_id}</span>
+               </div>
+               <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center text-primary font-black uppercase text-sm border border-primary/30 shadow-inner">
+                  {getInitials(user?.name)}
                </div>
             </div>
           </div>

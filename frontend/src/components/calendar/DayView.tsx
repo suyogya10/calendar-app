@@ -2,12 +2,93 @@
 
 import React, { useEffect, useRef } from "react";
 import { format, isToday } from "date-fns";
-import { useConfig } from "@/context/ConfigContext";
+import { useConfig, ApiEvent } from "@/context/ConfigContext";
 import { useAuth } from "@/context/AuthContext";
 
 interface DayViewProps {
   currentDate: Date;
   onSlotClick?: (date: Date, time: string) => void;
+}
+
+/** Parse an API datetime string as LOCAL time (no UTC shift) */
+function parseLocal(dtStr: string): Date {
+  const s = dtStr.replace("T", " ").slice(0, 19);
+  const [datePart, timePart = "00:00:00"] = s.split(" ");
+  const [year, month, day] = datePart.split("-").map(Number);
+  const [hour, minute, second] = timePart.split(":").map(Number);
+  return new Date(year, month - 1, day, hour, minute, second);
+}
+
+interface EventLayout {
+  event: ApiEvent;
+  top: number;
+  height: number;
+  col: number;
+  totalCols: number;
+}
+
+/** Assign non-overlapping side-by-side columns to events that share the same time slot */
+function computeLayout(dayEvents: ApiEvent[]): EventLayout[] {
+  if (dayEvents.length === 0) return [];
+
+  interface Slot {
+    event: ApiEvent;
+    startMs: number;
+    endMs: number;
+    col: number;
+    totalCols: number;
+    top: number;
+    height: number;
+  }
+
+  const slots: Slot[] = dayEvents.map(e => {
+    const start = parseLocal(e.start_time);
+    const end = e.end_time ? parseLocal(e.end_time) : new Date(start.getTime() + 3600000);
+    const top = (start.getHours() * 60 + start.getMinutes()) / 60 * 80;
+    const height = Math.max(50, (end.getTime() - start.getTime()) / 3600000 * 80);
+    return { event: e, startMs: start.getTime(), endMs: end.getTime(), col: 0, totalCols: 1, top, height };
+  });
+
+  // Sort by start time
+  slots.sort((a, b) => a.startMs - b.startMs);
+
+  // Greedy column assignment
+  const colEnds: number[] = [];
+  for (const slot of slots) {
+    let placed = false;
+    for (let c = 0; c < colEnds.length; c++) {
+      if (colEnds[c] <= slot.startMs) {
+        colEnds[c] = slot.endMs;
+        slot.col = c;
+        placed = true;
+        break;
+      }
+    }
+    if (!placed) {
+      slot.col = colEnds.length;
+      colEnds.push(slot.endMs);
+    }
+  }
+
+  // Calculate totalCols: max col among overlapping peers + 1
+  for (const slot of slots) {
+    let maxCol = slot.col;
+    for (const other of slots) {
+      if (other === slot) continue;
+      if (other.startMs < slot.endMs && other.endMs > slot.startMs) {
+        maxCol = Math.max(maxCol, other.col);
+      }
+    }
+    slot.totalCols = maxCol + 1;
+  }
+
+  return slots.map(s => ({
+    event: s.event,
+    top: s.top,
+    height: s.height,
+    col: s.col,
+    totalCols: s.totalCols,
+  }));
 }
 
 const DayView: React.FC<DayViewProps> = ({ currentDate, onSlotClick }) => {
@@ -25,6 +106,7 @@ const DayView: React.FC<DayViewProps> = ({ currentDate, onSlotClick }) => {
 
   const todayHoliday = apiHolidays.find(h => h.date === dayStr);
   const todayEvents = apiEvents.filter(e => e.start_time.startsWith(dayStr));
+  const layouts = computeLayout(todayEvents);
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -65,7 +147,7 @@ const DayView: React.FC<DayViewProps> = ({ currentDate, onSlotClick }) => {
           </h2>
           {todayHoliday && (
             <span className="text-xs font-bold text-holiday bg-holiday/10 px-2 py-0.5 rounded mt-1 w-fit">
-              🎉 {todayHoliday.title} {todayHoliday.bs_date_nepali && `(${todayHoliday.bs_date_nepali})`}
+              🎉 {todayHoliday.title}{todayHoliday.bs_date_nepali ? ` (${todayHoliday.bs_date_nepali})` : ""}
             </span>
           )}
           <p className="text-xs md:text-sm font-semibold mt-0.5" style={{ color: isHalfHoliday ? status.config?.color : undefined }}>
@@ -73,8 +155,12 @@ const DayView: React.FC<DayViewProps> = ({ currentDate, onSlotClick }) => {
               ? "🔴 Full Holiday" 
               : isHalfHoliday 
                 ? `🟡 Half Day — Work hours: ${status.config?.start} – ${status.config?.end}`
-                : todayEvents.length > 0 ? `${todayEvents.length} event${todayEvents.length > 1 ? 's' : ''} scheduled` : "No events scheduled"}
-            {isAdmin && !isFullHoliday && <span className="ml-2 text-primary/60 text-[10px] font-bold uppercase tracking-widest hidden md:inline">Click any slot to add event</span>}
+                : layouts.length > 0 ? `${layouts.length} event${layouts.length > 1 ? "s" : ""} scheduled` : "No events scheduled"}
+            {isAdmin && !isFullHoliday && (
+              <span className="ml-2 text-primary/60 text-[10px] font-bold uppercase tracking-widest hidden md:inline">
+                Click any slot to add event
+              </span>
+            )}
           </p>
         </div>
       </div>
@@ -152,29 +238,36 @@ const DayView: React.FC<DayViewProps> = ({ currentDate, onSlotClick }) => {
                );
              })}
 
-             {/* Real API Events */}
-             <div className="relative h-full z-[15] ml-2 md:ml-4">
-               {todayEvents.map(event => {
-                 const startDate = new Date(event.start_time);
-                 const endDate = event.end_time ? new Date(event.end_time) : new Date(startDate.getTime() + 3600000);
-                 const top = (startDate.getHours() * 60 + startDate.getMinutes()) / 60 * 80;
-                 const height = Math.max(50, (endDate.getTime() - startDate.getTime()) / 3600000 * 80);
+             {/* Events — side-by-side columns for overlapping events */}
+             <div className="absolute inset-0 ml-2 md:ml-4 z-[15]">
+               {layouts.map(({ event, top, height, col, totalCols }) => {
+                 const startDate = parseLocal(event.start_time);
+                 const endDate = event.end_time ? parseLocal(event.end_time) : new Date(startDate.getTime() + 3600000);
+                 const widthPct = 100 / totalCols;
+                 const leftPct = col * widthPct;
                  return (
                    <div
                      key={event.id}
-                     className="absolute left-0 right-0 bg-primary text-primary-foreground rounded-xl shadow-md shadow-primary/20 p-3 ring-2 ring-background cursor-pointer active:scale-[0.98] transition-transform"
-                     style={{ top: `${top}px`, height: `${height}px` }}
+                     className="absolute bg-primary text-primary-foreground rounded-xl shadow-md shadow-primary/20 p-3 ring-2 ring-background cursor-pointer active:scale-[0.98] transition-transform overflow-hidden"
+                     style={{
+                       top: `${top}px`,
+                       height: `${height}px`,
+                       left: `${leftPct}%`,
+                       width: `calc(${widthPct}% - 4px)`,
+                     }}
                    >
                      {!event.is_all_day && (
                        <span className="text-[9px] md:text-[10px] font-bold opacity-90 uppercase tracking-wider mb-0.5 block">
-                         {format(startDate, 'hh:mm a')} - {format(endDate, 'hh:mm a')}
+                         {format(startDate, "hh:mm a")} – {format(endDate, "hh:mm a")}
                        </span>
                      )}
                      {event.is_all_day && (
                        <span className="text-[9px] md:text-[10px] font-bold opacity-90 uppercase tracking-wider mb-0.5 block">All Day</span>
                      )}
-                     <h3 className="text-sm md:text-base font-black leading-tight">{event.title}</h3>
-                     {event.description && <p className="text-[10px] md:text-xs font-semibold opacity-90 mt-1 truncate">{event.description}</p>}
+                     <h3 className="text-sm md:text-base font-black leading-tight truncate">{event.title}</h3>
+                     {event.description && height > 70 && (
+                       <p className="text-[10px] md:text-xs font-semibold opacity-90 mt-1 truncate">{event.description}</p>
+                     )}
                    </div>
                  );
                })}

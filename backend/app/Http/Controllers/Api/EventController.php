@@ -26,10 +26,29 @@ class EventController extends Controller
     public function index(Request $request)
     {
         $user = $request->user();
-        if ($user && $user->is_admin) {
-            return Event::with('user')->orderBy('start_time')->get();
+        if (!$user) return response()->json(['events' => [], 'holidays' => \App\Models\Holiday::all()]);
+
+        if ($user->is_admin) {
+            return response()->json([
+                'events' => Event::with('user')->orderBy('start_time')->get(),
+                'holidays' => \App\Models\Holiday::all()
+            ]);
         }
-        return $user ? $user->events()->orderBy('start_time')->get() : [];
+
+        // For Staff: My events + Public events + Department events
+        $events = Event::with('user')
+            ->where(function($q) use ($user) {
+                $q->where('user_id', $user->id)
+                  ->orWhere('is_public', true)
+                  ->orWhere('department', $user->department);
+            })
+            ->orderBy('start_time')
+            ->get();
+
+        return response()->json([
+            'events' => $events,
+            'holidays' => \App\Models\Holiday::all()
+        ]);
     }
 
     public function store(Request $request)
@@ -40,6 +59,7 @@ class EventController extends Controller
             'start_time' => 'required|date',
             'end_time' => 'nullable|date|after_or_equal:start_time',
             'is_public' => 'sometimes|boolean',
+            'department' => 'nullable|string|max:255',
             'is_all_day' => 'sometimes|boolean'
         ]);
 
@@ -49,11 +69,41 @@ class EventController extends Controller
 
         $this->normalizeDates($validated);
 
-        if ($this->hasConflict($request->user()->id, $validated['start_time'], $validated['end_time'])) {
-            return response()->json(['message' => 'Conflict: You already have an event scheduled during this time period.'], 409);
+        // Block only if an all-day event already exists on this date,
+        // or if this new event is all-day and any event already exists on that date.
+        $conflict = $this->hasAllDayConflict(
+            $request->user()->id,
+            $validated['start_time'],
+            $validated['is_all_day'] ?? false
+        );
+        if ($conflict) {
+            return response()->json(['message' => $conflict], 409);
         }
 
         $event = $request->user()->events()->create($validated);
+
+        // Notify department if shared
+        if ($event->department) {
+            \App\Models\User::where('department', $event->department)
+                ->where('id', '!=', $request->user()->id)
+                ->get()
+                ->each(function($u) use ($event) {
+                    $u->notifications()->create([
+                        'title' => 'New Shared Event',
+                        'message' => "A new event '{$event->title}' has been shared with your department.",
+                        'type' => 'event',
+                        'link' => '/'
+                    ]);
+                    
+                    try {
+                        $u->notify(new \App\Notifications\GeneralNotification(
+                            'Shared Event: ' . $event->title,
+                            "A new event has been added to your departmental calendar: '{$event->title}'."
+                        ));
+                    } catch (\Exception $e) {}
+                });
+        }
+
         return response()->json($event, 201);
     }
 
@@ -75,6 +125,7 @@ class EventController extends Controller
             'start_time' => 'sometimes|required|date',
             'end_time' => 'nullable|date|after_or_equal:start_time',
             'is_public' => 'sometimes|boolean',
+            'department' => 'nullable|string|max:255',
             'is_all_day' => 'sometimes|boolean'
         ]);
 
@@ -82,17 +133,19 @@ class EventController extends Controller
             $validated['is_public'] = false;
         }
 
-        // If partial update, merge with existing dates to check conflict
-        $tempData = array_merge($event->toArray(), $validated);
-        $this->normalizeDates($tempData);
-
-        if ($this->hasConflict($event->user_id, $tempData['start_time'], $tempData['end_time'], $event->id)) {
-            return response()->json(['message' => 'Conflict: You already have an event scheduled during this time period.'], 409);
-        }
-
         // Only normalize the ones provided in request for the actual update
         $this->normalizeDates($validated);
-        
+
+        // Check all-day conflict (excluding the event being updated)
+        if (isset($validated['start_time']) || isset($validated['is_all_day'])) {
+            $mergedStart = $validated['start_time'] ?? $event->start_time;
+            $isAllDay = $validated['is_all_day'] ?? $event->is_all_day;
+            $conflict = $this->hasAllDayConflict($event->user_id, $mergedStart, $isAllDay, $event->id);
+            if ($conflict) {
+                return response()->json(['message' => $conflict], 409);
+            }
+        }
+
         $event->update($validated);
         return response()->json($event);
     }
@@ -120,17 +173,34 @@ class EventController extends Controller
         }
     }
 
-    private function hasConflict($userId, $start, $end, $ignoreEventId = null)
+    /**
+     * Block if:
+     * - The new event is all-day AND any event already exists on that date.
+     * - OR an all-day event already exists on that date (regardless of the new event's type).
+     * Multiple timed events on the same day/time are always allowed.
+     */
+    private function hasAllDayConflict($userId, $startTime, $isAllDay, $ignoreEventId = null): ?string
     {
+        $date = \Carbon\Carbon::parse($startTime)->toDateString(); // YYYY-MM-DD
+
         $query = Event::where('user_id', $userId)
-            ->where('start_time', '<', $end)
-            ->where('end_time', '>', $start);
+            ->whereDate('start_time', $date);
 
         if ($ignoreEventId) {
             $query->where('id', '!=', $ignoreEventId);
         }
 
-        return $query->exists();
+        // If there's already an all-day event on this date, no other events allowed
+        if ($query->clone()->where('is_all_day', true)->exists()) {
+            return 'An all-day event already exists on this date. Remove it before adding other events.';
+        }
+
+        // If new event is all-day but other events already exist on this date, block it
+        if ($isAllDay && $query->exists()) {
+            return 'Other events already exist on this date. Remove them before adding an all-day event.';
+        }
+
+        return null;
     }
 
     public function exportExcel(Request $request)

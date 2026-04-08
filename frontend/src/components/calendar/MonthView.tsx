@@ -9,10 +9,12 @@ import {
   isSameMonth,
   isToday,
   startOfMonth,
-  startOfWeek
+  startOfWeek,
+  subDays
 } from "date-fns";
 import { useConfig } from "@/context/ConfigContext";
 import { useAuth } from "@/context/AuthContext";
+import NepaliDate from "nepali-datetime";
 
 interface MonthViewProps {
   currentDate: Date;
@@ -20,12 +22,33 @@ interface MonthViewProps {
 }
 
 const MonthView: React.FC<MonthViewProps> = ({ currentDate, onDateClick }) => {
-  const { getHolidayStatus, holidays, halfHolidays, apiEvents, apiHolidays } = useConfig();
+  const { getHolidayStatus, settings, apiEvents, apiHolidays, calendarMode } = useConfig();
   const { role } = useAuth();
-  const isAdmin = role === "ADMIN";
+  
+  const isBsMode = calendarMode === "BS";
 
-  const monthStart = startOfMonth(currentDate);
-  const monthEnd = endOfMonth(monthStart);
+  let monthStart: Date;
+  let monthEnd: Date;
+  let currentBsYear: number | null = null;
+  let currentBsMonth: number | null = null;
+
+  if (isBsMode) {
+    const nd = new NepaliDate(currentDate);
+    currentBsYear = nd.getYear();
+    currentBsMonth = nd.getMonth();
+
+    const bsMonthStartNd = new NepaliDate(currentBsYear, currentBsMonth, 1);
+    monthStart = bsMonthStartNd.getDateObject();
+
+    const nextBsMonth = currentBsMonth === 11 ? 0 : currentBsMonth + 1;
+    const nextBsYear = currentBsMonth === 11 ? currentBsYear + 1 : currentBsYear;
+    const nextMonthStartNd = new NepaliDate(nextBsYear, nextBsMonth, 1);
+    monthEnd = subDays(nextMonthStartNd.getDateObject(), 1);
+  } else {
+    monthStart = startOfMonth(currentDate);
+    monthEnd = endOfMonth(monthStart);
+  }
+
   const calendarStart = startOfWeek(monthStart);
   const calendarEnd = endOfWeek(monthEnd);
 
@@ -38,18 +61,16 @@ const MonthView: React.FC<MonthViewProps> = ({ currentDate, onDateClick }) => {
 
   return (
     <div className="flex flex-col h-full p-2 md:p-6 lg:p-8 animate-in fade-in duration-500 overflow-hidden bg-background">
-      <div className="grid grid-cols-7 mb-2 md:mb-4 border-b border-border pb-2">
+      <div className="grid grid-cols-7 mb-2 md:mb-4 border-b border-border pb-2 shrink-0">
         {weekDays.map((day, idx) => {
-          const isHeaderHoliday = holidays.includes(idx);
-          const isHeaderHalf = !!halfHolidays[idx];
-          const halfColor = halfHolidays[idx]?.color;
+          const isHeaderHoliday = settings.holidayDays.includes(idx);
+          const isHeaderHalf = false; // Systemic half holidays discarded in favor of explicit DB holidays
           return (
             <div
               key={day}
               className={`text-center text-[10px] md:text-xs font-bold uppercase tracking-widest ${
                 isHeaderHoliday ? "text-holiday" : "text-muted-foreground"
               }`}
-              style={isHeaderHalf ? { color: halfColor } : {}}
             >
               <span className="hidden md:inline">{day}</span>
               <span className="md:hidden">{day.charAt(0)}</span>
@@ -58,11 +79,24 @@ const MonthView: React.FC<MonthViewProps> = ({ currentDate, onDateClick }) => {
         })}
       </div>
 
-      <div className="flex-1 grid grid-cols-7 auto-rows-fr gap-1 md:gap-2 lg:gap-4 overflow-y-auto custom-scrollbar">
+      <div className="flex-1 grid grid-cols-7 auto-rows-fr gap-1 md:gap-2 lg:gap-4 overflow-y-auto custom-scrollbar pb-20 md:pb-0">
         {days.map((day) => {
-          const isCurrentMonth = isSameMonth(day, monthStart);
+          let isCurrentMonth = false;
+          let primaryDateText = "";
+          let secondaryDateText = "";
+
+          if (isBsMode) {
+            const dayNd = new NepaliDate(day);
+            isCurrentMonth = dayNd.getYear() === currentBsYear && dayNd.getMonth() === currentBsMonth;
+            primaryDateText = dayNd.format("D");
+            secondaryDateText = format(day, "d");
+          } else {
+            isCurrentMonth = isSameMonth(day, monthStart);
+            primaryDateText = format(day, "d");
+            secondaryDateText = new NepaliDate(day).format("D");
+          }
+
           const isTodayDate = isToday(day);
-          
           const status = getHolidayStatus(day);
           const isFullHoliday = status.type === "FULL";
           const isHalfHoliday = status.type === "HALF";
@@ -71,7 +105,7 @@ const MonthView: React.FC<MonthViewProps> = ({ currentDate, onDateClick }) => {
             <div
               key={day.toString()}
               onClick={() => {
-                if (isAdmin && onDateClick) {
+                if (onDateClick) {
                   onDateClick(day);
                 }
               }}
@@ -80,16 +114,16 @@ const MonthView: React.FC<MonthViewProps> = ({ currentDate, onDateClick }) => {
                   ? isFullHoliday
                     ? "bg-holiday-bg ring-holiday/20 hover:ring-holiday/50"
                     : isHalfHoliday
-                      ? `bg-opacity-10 ring-opacity-20 hover:ring-opacity-50` // Base styles, custom color applied via style
+                      ? `bg-opacity-10 ring-opacity-20 hover:ring-opacity-50` 
                       : "bg-background ring-border hover:ring-primary/50"
                   : "bg-muted/50 ring-transparent text-muted-foreground/50"
-              } ${isAdmin ? "cursor-pointer" : ""}`}
+              } cursor-pointer`}
               style={isCurrentMonth && isHalfHoliday ? { 
-                backgroundColor: `${status.config?.color}11`, // 11 is hex for ~7% opacity
-                boxShadow: `inset 0 0 0 1px ${status.config?.color}33` // 33 is hex for 20% opacity
+                backgroundColor: `${status.config?.color}11`,
+                boxShadow: `inset 0 0 0 1px ${status.config?.color}33`
               } : {}}
             >
-              <div className="flex justify-center md:justify-between items-center mb-1 md:mb-2">
+              <div className="flex justify-between items-start mb-1 md:mb-2">
                 <span
                   className={`flex h-6 w-6 md:h-8 md:w-8 items-center justify-center rounded-full md:rounded-xl text-xs md:text-sm font-bold transition-all ${
                     isTodayDate
@@ -100,7 +134,11 @@ const MonthView: React.FC<MonthViewProps> = ({ currentDate, onDateClick }) => {
                   }`}
                   style={isCurrentMonth && isHalfHoliday && !isTodayDate ? { color: status.config?.color } : {}}
                 >
-                  {format(day, "d")}
+                  {primaryDateText}
+                </span>
+                
+                <span className={`text-[9px] md:text-[11px] font-black opacity-40 mt-1 md:mt-2 pr-1 ${isCurrentMonth ? (isFullHoliday ? 'text-holiday' : 'text-foreground') : 'text-muted-foreground'}`}>
+                   {secondaryDateText}
                 </span>
               </div>
               

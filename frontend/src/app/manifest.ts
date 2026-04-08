@@ -2,9 +2,9 @@ import { MetadataRoute } from 'next'
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: 'Premium Calendar',
-    short_name: 'Calendar',
-    description: 'A responsive, mobile-first calendar PWA built with Next.js.',
+    name: 'Office Dashboard',
+    short_name: 'Dashboard',
+    description: 'A modern, mobile-first office hub and calendar PWA.',
     start_url: '/',
     display: 'standalone',
     background_color: '#fdfdfd',
