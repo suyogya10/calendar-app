@@ -10,13 +10,14 @@ RUN apt-get update && apt-get install -y \
     libxml2-dev \
     zip \
     unzip \
-    libzip-dev
+    libzip-dev \
+    libicu-dev
 
 # Clear cache
 RUN apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # Install PHP extensions
-RUN docker-php-ext-install pdo_mysql mbstring exif pcntl bcmath gd zip
+RUN docker-php-ext-install pdo_mysql mbstring exif pcntl bcmath gd zip intl
 
 # Get latest Composer
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
@@ -24,11 +25,17 @@ COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 # Set working directory
 WORKDIR /var/www
 
-# Copy existing application directory contents
+# Copy composer files first for better caching and to avoid script issues
+COPY composer.json composer.lock ./
+
+# Install dependencies without scripts (prevents artisan discover failure)
+RUN composer install --no-interaction --no-dev --no-scripts --no-autoloader
+
+# Copy the rest of the application
 COPY . /var/www
 
-# Install dependencies
-RUN composer install --no-interaction --no-dev --optimize-autoloader
+# Now generate the autoloader and run scripts if needed
+RUN composer dump-autoload --optimize
 
 # Set permissions
 RUN chown -R www-data:www-data /var/www/storage /var/www/bootstrap/cache
