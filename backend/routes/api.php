@@ -6,12 +6,15 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\EventController;
 use App\Http\Controllers\Api\HolidayController;
+use App\Http\Controllers\Api\SettingController;
+use App\Http\Controllers\Api\UserController;
 
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
 
 // Completely unauthenticated public endpoint for schools/office display
 Route::get('/public-calendar', [EventController::class, 'publicCalendar']);
+Route::get('/settings', [SettingController::class, 'index']);
 
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('/user', function (Request $request) {
@@ -28,6 +31,14 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('holidays', [HolidayController::class, 'store']);
         Route::put('holidays/{holiday}', [HolidayController::class, 'update']);
         Route::delete('holidays/{holiday}', [HolidayController::class, 'destroy']);
+        Route::post('settings', [SettingController::class, 'store']);
+        
+        // User Management
+        Route::get('users', [UserController::class, 'index']);
+        Route::post('users', [UserController::class, 'store']);
+        Route::put('users/{user}', [UserController::class, 'update']);
+        Route::delete('users/{user}', [UserController::class, 'destroy']);
+        Route::post('users/import-excel', [UserController::class, 'importExcel']);
     });
 
     Route::get('events/export-excel', [EventController::class, 'exportExcel']);

@@ -7,23 +7,27 @@ use Illuminate\Http\Request;
 
 use App\Models\Holiday;
 use App\Imports\HolidayImport;
+use App\Exports\HolidayExport;
 use Maatwebsite\Excel\Facades\Excel;
-use Illuminate\Support\Facades\Http;
 
 class HolidayController extends Controller
 {
     public function index()
     {
-        return Holiday::all();
+        return Holiday::orderBy('date')->get();
     }
 
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'title' => 'required|string|max:255',
-            'date' => 'required|date',
-            'description' => 'nullable|string'
+            'title'       => 'required|string|max:255',
+            'date'        => 'required|date',
+            'type'        => 'sometimes|in:FULL,HALF',
+            'description' => 'nullable|string',
         ]);
+
+        $validated['type'] = $validated['type'] ?? 'FULL';
+        $validated['date'] = \Carbon\Carbon::parse($validated['date'])->format('Y-m-d');
 
         $holiday = Holiday::create($validated);
         return response()->json($holiday, 201);
@@ -37,10 +41,15 @@ class HolidayController extends Controller
     public function update(Request $request, Holiday $holiday)
     {
         $validated = $request->validate([
-            'title' => 'sometimes|required|string|max:255',
-            'date' => 'sometimes|required|date',
-            'description' => 'nullable|string'
+            'title'       => 'sometimes|required|string|max:255',
+            'date'        => 'sometimes|required|date',
+            'type'        => 'sometimes|in:FULL,HALF',
+            'description' => 'nullable|string',
         ]);
+
+        if (isset($validated['date'])) {
+            $validated['date'] = \Carbon\Carbon::parse($validated['date'])->format('Y-m-d');
+        }
 
         $holiday->update($validated);
         return response()->json($holiday);
@@ -52,40 +61,15 @@ class HolidayController extends Controller
         return response()->json(null, 204);
     }
 
-    public function importExcel(Request $request)
-    {
-        $request->validate([
-            'file' => 'required|file|mimes:xlsx,xls,csv'
-        ]);
-
-        Excel::import(new HolidayImport, $request->file('file'));
-
-        return response()->json(['message' => 'Holidays imported from excel successfully.']);
-    }
-
-    public function fetchExternalAPI()
-    {
-        // Example external API integration for Nepali holidays
-        
-        /* 
-        $response = Http::get('https://example-nepal-holidays-api.com/api/v1/holidays');
-        if ($response->successful()) {
-            $holidays = $response->json();
-            foreach ($holidays as $item) {
-                Holiday::updateOrCreate(
-                    ['date' => \Carbon\Carbon::parse($item['date'])->format('Y-m-d')],
-                    ['title' => $item['title'], 'description' => $item['description'] ?? null]
-                );
-            }
-            return response()->json(['message' => 'Synced with external API!']);
-        } 
-        */
-
-        return response()->json(['message' => 'Placeholder: Please uncomment and replace with actual API URL in HolidayController.'], 200);
-    }
-
     public function exportExcel()
     {
-        return Excel::download(new \App\Exports\HolidayExport, 'holidays.xlsx');
+        return Excel::download(new HolidayExport, 'holidays.xlsx');
+    }
+
+    public function importExcel(Request $request)
+    {
+        $request->validate(['file' => 'required|file|mimes:xlsx,xls,csv']);
+        Excel::import(new HolidayImport, $request->file('file'));
+        return response()->json(['message' => 'Holidays imported successfully.']);
     }
 }

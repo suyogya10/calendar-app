@@ -25,24 +25,24 @@
 }
 
 .dark {
-  /* Catppuccin Macchiato Base */
-  --background: #24273a; /* Base */
-  --foreground: #cad3f5; /* Text */
+  /* Deep Obsidian Dark Mode */
+  --background: #090a0f; /* Very deep dark tint */
+  --foreground: #f8fafc; /* Crisp white-slate text */
 
-  /* Semantic UI Colors - Dark (Catppuccin + Brand) */
-  --primary: #8aadf4; /* Catppuccin Blue (closely related to brand blue but palettes-native) */
-  --primary-foreground: #24273a;
+  /* Vibrant Accents */
+  --primary: #3b82f6; /* Strong readable blue */
+  --primary-foreground: #ffffff;
   
-  --secondary: #a6da95; /* Catppuccin Green (related to brand green) */
-  --accent: #f5a97f; /* Catppuccin Peach (related to brand orange) */
+  --secondary: #22c55e; /* Strong green */
+  --accent: #f97316; /* Strong orange */
   
-  --card: #1e2030; /* Mantle */
-  --muted: #363a4f; /* Surface 0 */
-  --muted-foreground: #b8c0e0; /* Subtext 1 */
-  --border: #494d64; /* Surface 1 */
+  --card: #11131a; /* Distinctly darker cards */
+  --muted: #1e2230; /* Subtle grayish-blue surface */
+  --muted-foreground: #94a3b8; /* Slate 400 */
+  --border: #2e3547; /* Slate 800-ish */
   
-  --holiday: #ed8796; /* Catppuccin Red */
-  --holiday-bg: #3b222a; /* Custom dark red mix */
+  --holiday: #ef4444; /* Readable Red */
+  --holiday-bg: #351315; /* Extremely dark red overlay */
 }
 
 @theme inline {
@@ -74,6 +74,7 @@ body {
   color: var(--foreground);
   font-family: var(--font-geist-sans), ui-sans-serif, system-ui, -apple-system;
   -webkit-font-smoothing: antialiased;
+  scrollbar-gutter: stable;
 }
 
 /* Custom Scrollbar */
