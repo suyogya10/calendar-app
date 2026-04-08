@@ -84,4 +84,9 @@ class UserController extends Controller
             return response()->json(['message' => 'Import failed: ' . $e->getMessage()], 500);
         }
     }
+
+    public function getDepartments()
+    {
+        return response()->json(User::whereNotNull('department')->distinct()->pluck('department'));
+    }
 }

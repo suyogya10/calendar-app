@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { format } from "date-fns";
 import { 
   ChevronLeft, 
@@ -11,17 +11,22 @@ import {
   Square, 
   Plus, 
   Settings2,
-  MoreVertical,
-  LayoutDashboard
+  LayoutDashboard,
+  Bell,
+  Megaphone,
+  X
 } from "lucide-react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 
 import { ThemeToggle } from "../ThemeToggle";
 import { LoginButton } from "../LoginButton";
 import { useAuth } from "@/context/AuthContext";
 import { useConfig } from "@/context/ConfigContext";
+import { fetchApi } from "@/lib/api";
 import NepaliDate from "nepali-datetime";
+import NotificationDrawer from "./NotificationDrawer";
 
 type ViewType = "month" | "week" | "day";
 
@@ -44,15 +49,33 @@ const CalendarHeader: React.FC<CalendarHeaderProps> = ({
   onToday,
   onAddEvent,
 }) => {
-  const { role } = useAuth();
+  const { role, user } = useAuth();
   const isAdmin = role === "ADMIN";
   const { calendarMode, setCalendarMode, settings } = useConfig();
   const [showMobileMenu, setShowMobileMenu] = useState(false);
+  const [showNotifications, setShowNotifications] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const pathname = usePathname();
   
   const nd = new NepaliDate(currentDate);
   const headerTitle = calendarMode === "BS" 
     ? nd.format("MMMM YYYY") 
     : format(currentDate, "MMMM yyyy");
+
+  useEffect(() => {
+    if (!user) return;
+    const fetchUnread = async () => {
+      try {
+        const notes = await fetchApi("/notifications");
+        setUnreadCount(notes.filter((n: any) => !n.is_read).length);
+      } catch (e) {
+        console.error(e);
+      }
+    };
+    fetchUnread();
+    const interval = setInterval(fetchUnread, 30000);
+    return () => clearInterval(interval);
+  }, [user]);
 
   return (
     <>
@@ -97,7 +120,7 @@ const CalendarHeader: React.FC<CalendarHeaderProps> = ({
             ))}
           </div>
 
-          {/* Nav Controls - More Compact on Mobile */}
+          {/* Nav Controls */}
           <div className="flex items-center gap-0.5 md:gap-1 bg-muted p-1 rounded-xl md:rounded-2xl border border-border">
             <button onClick={onPrev} className="p-1.5 md:p-2 hover:bg-background rounded-lg md:rounded-xl transition-all text-muted-foreground hover:text-foreground">
               <ChevronLeft className="w-4 h-4 md:w-5 md:h-5" />
@@ -110,7 +133,7 @@ const CalendarHeader: React.FC<CalendarHeaderProps> = ({
             </button>
           </div>
 
-          <div className="hidden md:flex items-center gap-1 bg-muted p-1.5 rounded-2xl border border-border">
+          <div className="hidden xl:flex items-center gap-1 bg-muted p-1.5 rounded-2xl border border-border">
             {(["month", "week", "day"] as ViewType[]).map((v) => (
               <button
                 key={v}
@@ -132,7 +155,7 @@ const CalendarHeader: React.FC<CalendarHeaderProps> = ({
           {isAdmin && (
             <button 
               onClick={onAddEvent}
-              className="hidden md:flex items-center justify-center gap-2 px-5 py-2.5 bg-primary text-primary-foreground font-black text-sm rounded-2xl shadow-lg shadow-primary/30 hover:opacity-90 active:scale-95 transition-all ml-2"
+              className="hidden lg:flex items-center justify-center gap-2 px-5 py-2.5 bg-primary text-primary-foreground font-black text-sm rounded-2xl shadow-lg shadow-primary/30 hover:opacity-90 active:scale-95 transition-all ml-2"
             >
                <Plus className="w-4 h-4 stroke-[3px]" />
                <span>Create</span>
@@ -140,7 +163,32 @@ const CalendarHeader: React.FC<CalendarHeaderProps> = ({
           )}
 
           <div className="flex items-center gap-1 md:gap-2">
+            <Link 
+              href="/announcements"
+              className={`relative w-9 h-9 md:w-10 md:h-10 flex items-center justify-center rounded-xl md:rounded-2xl border transition-all ${
+                pathname === "/announcements" ? "bg-primary/10 border-primary text-primary" : "bg-muted border-border text-foreground hover:bg-background"
+              }`}
+              title="Announcements"
+            >
+               <Megaphone className="w-4 h-4 md:w-5 md:h-5" />
+            </Link>
+
             <ThemeToggle />
+            
+            {user && (
+              <button 
+                onClick={() => setShowNotifications(true)}
+                className="relative w-9 h-9 md:w-10 md:h-10 flex items-center justify-center rounded-xl md:rounded-2xl bg-muted border border-border text-foreground hover:bg-background transition-all"
+              >
+                <Bell className="w-4 h-4 md:w-5 md:h-5" />
+                {unreadCount > 0 && (
+                   <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-[9px] font-black rounded-full flex items-center justify-center animate-bounce shadow-lg shadow-red-500/20">
+                      {unreadCount}
+                   </span>
+                )}
+              </button>
+            )}
+
             <div className="md:hidden">
                <button 
                 onClick={() => setShowMobileMenu(!showMobileMenu)}
@@ -154,41 +202,47 @@ const CalendarHeader: React.FC<CalendarHeaderProps> = ({
         </div>
       </div>
 
+      <NotificationDrawer isOpen={showNotifications} onClose={() => setShowNotifications(false)} />
+
       {/* Mobile Bottom Navigation (PWA-optimized) */}
-      <nav className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[100] md:hidden">
-         <div className="bg-background/80 backdrop-blur-2xl border border-border shadow-2xl rounded-3xl p-2 px-4 flex items-center gap-4">
-            <button onClick={onToday} className="flex flex-col items-center gap-0.5 p-2 px-3 hover:bg-muted rounded-2xl transition-all active:scale-90">
-               <CalendarIcon className="w-5 h-5 text-foreground" />
-               <span className="text-[10px] font-black uppercase tracking-tighter">Today</span>
+      <nav className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[100] md:hidden w-[90%] max-w-sm">
+         <div className="bg-background/80 backdrop-blur-2xl border border-border shadow-2xl rounded-3xl p-2 px-3 flex items-center justify-between">
+            <button onClick={onToday} className="flex flex-col items-center gap-0.5 p-2 flex-1 group active:scale-90 transition-transform">
+               <CalendarIcon className="w-5 h-5 text-foreground group-hover:text-primary transition-colors" />
+               <span className="text-[9px] font-black uppercase tracking-tighter">Today</span>
             </button>
             
-            <div className="w-px h-8 bg-border" />
+            <div className="w-px h-6 bg-border mx-1" />
 
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-1 flex-[3]">
               {(["month", "week", "day"] as ViewType[]).map((v) => (
                 <button
                   key={v}
                   onClick={() => setView(v)}
-                  className={`p-2 px-3 rounded-2xl flex flex-col items-center gap-0.5 transition-all ${view === v ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/20' : 'text-muted-foreground'}`}
+                  className={`flex-1 p-2 rounded-2xl flex flex-col items-center gap-0.5 transition-all ${view === v ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/20' : 'text-muted-foreground'}`}
                 >
                   {v === "month" && <Grid3X3 className="w-5 h-5" />}
                   {v === "week" && <Columns className="w-5 h-5" />}
                   {v === "day" && <Square className="w-5 h-5" />}
-                  <span className="text-[10px] font-black uppercase tracking-tighter capitalize">{v}</span>
+                  <span className="text-[9px] font-black uppercase tracking-tighter capitalize">{v}</span>
                 </button>
               ))}
             </div>
 
-            {isAdmin && (
-              <>
-                <div className="w-px h-8 bg-border" />
-                <button 
-                  onClick={onAddEvent}
-                  className="w-12 h-12 bg-primary text-primary-foreground rounded-2xl flex items-center justify-center shadow-lg shadow-primary/30 active:scale-90 transition-all"
-                >
-                   <Plus className="w-6 h-6 stroke-[3px]" />
-                </button>
-              </>
+            <div className="w-px h-6 bg-border mx-1" />
+
+            {isAdmin ? (
+               <button 
+                onClick={onAddEvent}
+                className="flex-1 w-11 h-11 bg-primary text-primary-foreground rounded-2xl flex items-center justify-center shadow-lg shadow-primary/30 active:scale-90 transition-all"
+               >
+                  <Plus className="w-6 h-6 stroke-[3px]" />
+               </button>
+            ) : (
+               <Link href="/announcements" className="flex flex-col items-center gap-0.5 p-2 flex-1 group active:scale-90 transition-transform">
+                  <Megaphone className="w-5 h-5 text-foreground group-hover:text-primary transition-colors" />
+                  <span className="text-[9px] font-black uppercase tracking-tighter">News</span>
+               </Link>
             )}
          </div>
       </nav>
@@ -212,13 +266,22 @@ const CalendarHeader: React.FC<CalendarHeaderProps> = ({
               className="fixed inset-y-0 right-0 z-[120] w-72 bg-background border-l border-border shadow-2xl p-6 flex flex-col gap-6 md:hidden"
             >
               <div className="flex items-center justify-between">
-                <h3 className="text-sm font-black text-foreground uppercase tracking-widest">Calendar Settings</h3>
+                <h3 className="text-sm font-black text-foreground uppercase tracking-widest">Calendar Menu</h3>
                 <button onClick={() => setShowMobileMenu(false)} className="p-2 hover:bg-muted rounded-xl">
                   <X className="w-5 h-5" />
                 </button>
               </div>
 
               <div className="flex flex-col gap-4">
+                <Link 
+                  href="/announcements"
+                  onClick={() => setShowMobileMenu(false)}
+                  className="flex items-center gap-4 p-4 bg-muted/50 border border-border rounded-2xl text-foreground hover:bg-primary/10 hover:border-primary/30 transition-all font-black"
+                >
+                   <Megaphone className="w-5 h-5 text-primary" />
+                   Announcements
+                </Link>
+
                 <div className="flex flex-col gap-2">
                    <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest ml-1">Calendar Mode</label>
                    <div className="grid grid-cols-2 gap-2 bg-muted p-1.5 rounded-2xl border border-border">
@@ -263,12 +326,5 @@ const CalendarHeader: React.FC<CalendarHeaderProps> = ({
     </>
   );
 };
-
-// Simple X icon since we are missing it in imports
-const X = ({ className }: { className?: string }) => (
-  <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-  </svg>
-);
 
 export default CalendarHeader;

@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { X, Calendar as CalendarIcon, Clock, Type, AlignLeft, Globe, Save, Pencil, Flag, Sun } from "lucide-react";
+import { X, Calendar as CalendarIcon, Clock, Type, AlignLeft, Globe, Save, Pencil, Flag, Sun, Users } from "lucide-react";
 import { format } from "date-fns";
 import { motion, AnimatePresence } from "framer-motion";
 import { fetchApi } from "@/lib/api";
@@ -51,10 +51,27 @@ export function EventModal({ isOpen, onClose, eventToEdit, selectedDate, initial
   const [endTime, setEndTime] = useState("10:00");
   const [isAllDay, setIsAllDay] = useState(false);
   const [isPublic, setIsPublic] = useState(true);
+  const [department, setDepartment] = useState("");
   const [isHoliday, setIsHoliday] = useState(false);
   const [holidayType, setHolidayType] = useState<HolidayType>("FULL");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState("");
+
+  const [departments, setDepartments] = useState<string[]>([]);
+
+  useEffect(() => {
+    if (isOpen) {
+      const loadDepts = async () => {
+        try {
+          const data = await fetchApi("/users/departments");
+          setDepartments(data || []);
+        } catch (e) {
+          console.error("Failed to load departments", e);
+        }
+      };
+      loadDepts();
+    }
+  }, [isOpen]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -69,6 +86,7 @@ export function EventModal({ isOpen, onClose, eventToEdit, selectedDate, initial
         setEndTime("10:00");
         setIsAllDay(true);
         setIsPublic(true);
+        setDepartment("");
         setIsHoliday(true);
         setHolidayType((eventToEdit.type as HolidayType) || "FULL");
       } else {
@@ -82,6 +100,7 @@ export function EventModal({ isOpen, onClose, eventToEdit, selectedDate, initial
         setEndTime(end ? format(end, "HH:mm") : "10:00");
         setIsAllDay(eventToEdit.is_all_day);
         setIsPublic(eventToEdit.is_public);
+        setDepartment(eventToEdit.department || "");
         setIsHoliday(false);
         setHolidayType("FULL");
       }
@@ -93,6 +112,7 @@ export function EventModal({ isOpen, onClose, eventToEdit, selectedDate, initial
       setEndTime("10:00");
       setIsAllDay(false);
       setIsPublic(true);
+      setDepartment("");
       setIsHoliday(false);
       setHolidayType("FULL");
     }
@@ -124,7 +144,15 @@ export function EventModal({ isOpen, onClose, eventToEdit, selectedDate, initial
         // Create / update an Event
         const startDateTime = isAllDay ? `${date} 00:00:00` : `${date} ${startTime}:00`;
         const endDateTime = isAllDay ? `${date} 23:59:00` : `${date} ${endTime}:00`;
-        const body = { title, description, start_time: startDateTime, end_time: endDateTime, is_all_day: isAllDay, is_public: isPublic };
+        const body = { 
+          title, 
+          description, 
+          start_time: startDateTime, 
+          end_time: endDateTime, 
+          is_all_day: isAllDay, 
+          is_public: isPublic,
+          department: isPublic ? null : (department || null)
+        };
 
         if (isEditMode && eventToEdit) {
           if ('type' in eventToEdit) {
@@ -153,7 +181,7 @@ export function EventModal({ isOpen, onClose, eventToEdit, selectedDate, initial
   return (
     <AnimatePresence>
       {isOpen && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-[110] flex items-center justify-center p-4">
           <motion.div
             initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
             onClick={onClose}
@@ -203,7 +231,7 @@ export function EventModal({ isOpen, onClose, eventToEdit, selectedDate, initial
 
               {/* Holiday Type Selector (shown when isHoliday) */}
               {isHoliday && (
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-2 gap-3 animate-in fade-in zoom-in-95 duration-200">
                   <button
                     type="button"
                     onClick={() => setHolidayType("FULL")}
@@ -276,7 +304,7 @@ export function EventModal({ isOpen, onClose, eventToEdit, selectedDate, initial
 
               {/* Time + All-day — only for regular events */}
               {!isHoliday && (
-                <>
+                <div className="space-y-5">
                   <div className="flex items-center justify-between">
                     <label className="flex items-center gap-2 text-sm font-bold text-foreground cursor-pointer" onClick={() => setIsAllDay(!isAllDay)}>
                       <CalendarIcon className="w-4 h-4 text-muted-foreground" />All Day Event
@@ -285,18 +313,14 @@ export function EventModal({ isOpen, onClose, eventToEdit, selectedDate, initial
                   </div>
 
                   {!isAllDay && (
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-2 gap-4 animate-in slide-in-from-top-2 duration-200">
                       <div className="space-y-2">
-                        <label className="flex items-center gap-2 text-sm font-bold text-foreground">
-                          <Clock className="w-4 h-4 text-muted-foreground" />Start Time
-                        </label>
+                        <label className="text-[10px] font-black uppercase text-muted-foreground tracking-widest pl-1">Start Time</label>
                         <input type="time" value={startTime} onChange={(e) => setStartTime(e.target.value)}
                           className="w-full px-4 py-3 bg-muted/50 border border-border rounded-xl text-foreground font-semibold focus:outline-none focus:ring-2 focus:ring-primary/40 transition-all" />
                       </div>
                       <div className="space-y-2">
-                        <label className="flex items-center gap-2 text-sm font-bold text-foreground">
-                          <Clock className="w-4 h-4 text-muted-foreground" />End Time
-                        </label>
+                        <label className="text-[10px] font-black uppercase text-muted-foreground tracking-widest pl-1">End Time</label>
                         <input type="time" value={endTime} onChange={(e) => setEndTime(e.target.value)}
                           className="w-full px-4 py-3 bg-muted/50 border border-border rounded-xl text-foreground font-semibold focus:outline-none focus:ring-2 focus:ring-primary/40 transition-all" />
                       </div>
@@ -304,17 +328,41 @@ export function EventModal({ isOpen, onClose, eventToEdit, selectedDate, initial
                   )}
 
                   {/* Public Toggle */}
-                  <div className="flex items-center justify-between p-4 bg-muted/30 border border-border rounded-2xl">
-                    <div className="flex items-center gap-2">
-                      <Globe className="w-4 h-4 text-primary" />
-                      <div>
-                        <p className="text-sm font-bold text-foreground">Public Event</p>
-                        <p className="text-xs text-muted-foreground">Visible on the public calendar</p>
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between p-4 bg-muted/30 border border-border rounded-2xl">
+                      <div className="flex items-center gap-2">
+                        <Globe className="w-4 h-4 text-primary" />
+                        <div>
+                          <p className="text-sm font-bold text-foreground">Public Event</p>
+                          <p className="text-xs text-muted-foreground">Visible on the public calendar</p>
+                        </div>
                       </div>
+                      <Toggle value={isPublic} onChange={() => setIsPublic(!isPublic)} />
                     </div>
-                    <Toggle value={isPublic} onChange={() => setIsPublic(!isPublic)} />
+
+                    {!isPublic && (
+                       <div className="space-y-2 p-4 bg-muted/20 border border-border rounded-2xl animate-in fade-in slide-in-from-top-1 duration-200">
+                          <label className="flex items-center gap-2 text-sm font-bold text-foreground">
+                            <Users className="w-4 h-4 text-primary" />
+                            Share with Department
+                          </label>
+                          <select 
+                            value={department}
+                            onChange={(e) => setDepartment(e.target.value)}
+                            className="w-full px-4 py-3 bg-background border border-border rounded-xl text-sm font-bold text-foreground outline-none focus:ring-2 focus:ring-primary/50"
+                          >
+                            <option value="">Personal (Private)</option>
+                            {departments.map(dept => (
+                              <option key={dept} value={dept}>{dept}</option>
+                            ))}
+                          </select>
+                          <p className="text-[10px] font-semibold text-muted-foreground px-1 italic">
+                            * Shared events are visible to everyone in the selected department.
+                          </p>
+                       </div>
+                    )}
                   </div>
-                </>
+                </div>
               )}
 
               {error && (

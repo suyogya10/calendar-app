@@ -38,6 +38,7 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body
+        suppressHydrationWarning
         className={`${geistSans.variable} min-h-screen flex flex-col antialiased bg-background text-foreground transition-colors duration-500`}
       >
         <ThemeProvider

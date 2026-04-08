@@ -26,10 +26,29 @@ class EventController extends Controller
     public function index(Request $request)
     {
         $user = $request->user();
-        if ($user && $user->is_admin) {
-            return Event::with('user')->orderBy('start_time')->get();
+        if (!$user) return response()->json(['events' => [], 'holidays' => \App\Models\Holiday::all()]);
+
+        if ($user->is_admin) {
+            return response()->json([
+                'events' => Event::with('user')->orderBy('start_time')->get(),
+                'holidays' => \App\Models\Holiday::all()
+            ]);
         }
-        return $user ? $user->events()->orderBy('start_time')->get() : [];
+
+        // For Staff: My events + Public events + Department events
+        $events = Event::with('user')
+            ->where(function($q) use ($user) {
+                $q->where('user_id', $user->id)
+                  ->orWhere('is_public', true)
+                  ->orWhere('department', $user->department);
+            })
+            ->orderBy('start_time')
+            ->get();
+
+        return response()->json([
+            'events' => $events,
+            'holidays' => \App\Models\Holiday::all()
+        ]);
     }
 
     public function store(Request $request)
@@ -40,6 +59,7 @@ class EventController extends Controller
             'start_time' => 'required|date',
             'end_time' => 'nullable|date|after_or_equal:start_time',
             'is_public' => 'sometimes|boolean',
+            'department' => 'nullable|string|max:255',
             'is_all_day' => 'sometimes|boolean'
         ]);
 
@@ -61,6 +81,29 @@ class EventController extends Controller
         }
 
         $event = $request->user()->events()->create($validated);
+
+        // Notify department if shared
+        if ($event->department) {
+            \App\Models\User::where('department', $event->department)
+                ->where('id', '!=', $request->user()->id)
+                ->get()
+                ->each(function($u) use ($event) {
+                    $u->notifications()->create([
+                        'title' => 'New Shared Event',
+                        'message' => "A new event '{$event->title}' has been shared with your department.",
+                        'type' => 'event',
+                        'link' => '/'
+                    ]);
+                    
+                    try {
+                        $u->notify(new \App\Notifications\GeneralNotification(
+                            'Shared Event: ' . $event->title,
+                            "A new event has been added to your departmental calendar: '{$event->title}'."
+                        ));
+                    } catch (\Exception $e) {}
+                });
+        }
+
         return response()->json($event, 201);
     }
 
@@ -82,6 +125,7 @@ class EventController extends Controller
             'start_time' => 'sometimes|required|date',
             'end_time' => 'nullable|date|after_or_equal:start_time',
             'is_public' => 'sometimes|boolean',
+            'department' => 'nullable|string|max:255',
             'is_all_day' => 'sometimes|boolean'
         ]);
 

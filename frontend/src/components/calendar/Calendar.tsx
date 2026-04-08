@@ -90,6 +90,8 @@ const Calendar: React.FC = () => {
         onAddEvent={() => openEventModal(currentDate)}
       />
       
+
+      
       <main {...handlers} className="flex-1 flex overflow-hidden w-full relative">
         <AnimatePresence initial={false} custom={direction} mode="popLayout">
           <motion.div
