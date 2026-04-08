@@ -5,23 +5,21 @@ import { format } from "date-fns";
 import { 
   ChevronLeft, 
   ChevronRight, 
-  Calendar as CalendarIcon, 
+  Calendar as CalendarIcon,
   Grid3X3, 
   Columns, 
   Square, 
-  Plus, 
+  Plus,
   Settings2,
-  LayoutDashboard,
   Bell,
+  X,
   Megaphone,
-  X
+  LayoutDashboard
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-
 import { ThemeToggle } from "../ThemeToggle";
-import { LoginButton } from "../LoginButton";
 import { useAuth } from "@/context/AuthContext";
 import { useConfig } from "@/context/ConfigContext";
 import { fetchApi } from "@/lib/api";
@@ -79,39 +77,37 @@ const CalendarHeader: React.FC<CalendarHeaderProps> = ({
 
   return (
     <>
-      <div className="flex items-center justify-between gap-2 p-3 md:p-6 bg-background/80 backdrop-blur-xl sticky top-0 z-40 border-b border-border shadow-sm md:shadow-none">
-        {/* Left Section: Logo & Date */}
-        <div className="flex items-center gap-2 md:gap-3">
-          {settings.logoUrl ? (
-            <img src={settings.logoUrl} alt="Logo" className="w-9 h-9 md:w-12 md:h-12 rounded-xl object-contain" />
-          ) : (
-            <div className="p-2 md:p-3 bg-gradient-to-br from-primary to-primary/80 rounded-xl md:rounded-2xl shadow-lg shadow-primary/30 text-primary-foreground">
-              <CalendarIcon className="w-4 h-4 md:w-5 md:h-5" />
-            </div>
-          )}
-          <div className="flex flex-col">
-            <h1 className="text-lg md:text-2xl font-black text-foreground tracking-tighter leading-none whitespace-nowrap">
-              {headerTitle}
-            </h1>
-            <div className="flex items-center gap-1.5 mt-1 md:hidden">
-               <span className="text-[9px] font-black text-primary/70 uppercase tracking-widest">{view}</span>
-               <div className="w-1 h-1 rounded-full bg-border" />
-               <span className="text-[9px] font-black text-primary/70 uppercase tracking-widest">{calendarMode} Mode</span>
-            </div>
+      <div className="flex items-center justify-between gap-2 p-2 md:p-3 bg-background/80 backdrop-blur-xl sticky top-14 md:top-16 z-40 border-b border-border m-0">
+        {/* Left Section: Nav Controls */}
+        <div className="flex items-center gap-1.5 md:gap-3">
+          <div className="flex items-center gap-0.5 md:gap-1 bg-muted p-1 rounded-xl border border-border">
+            <button onClick={onPrev} className="p-1.5 md:p-2 hover:bg-background rounded-lg md:rounded-xl transition-all text-muted-foreground hover:text-foreground">
+              <ChevronLeft className="w-4 h-4 md:w-5 md:h-5" />
+            </button>
+            <button onClick={onToday} className="hidden sm:block px-3 py-1.5 text-xs font-bold text-foreground hover:bg-background rounded-xl transition-all">
+              Today
+            </button>
+            <button onClick={onNext} className="p-1.5 md:p-2 hover:bg-background rounded-lg md:rounded-xl transition-all text-muted-foreground hover:text-foreground">
+              <ChevronRight className="w-4 h-4 md:w-5 md:h-5" />
+            </button>
           </div>
+          
+          <h1 className="text-sm md:text-xl font-black text-foreground tracking-tight ml-2 m-0">
+            {headerTitle}
+          </h1>
         </div>
 
-        {/* Right Section: Controls */}
-        <div className="flex items-center gap-1 md:gap-3">
-          {/* AD/BS Toggle - Desktop */}
-          <div className="hidden md:flex items-center gap-1 bg-muted p-1.5 rounded-2xl border border-border">
+        {/* Right Section: View & Mode Toggles */}
+        <div className="flex items-center gap-1.5 md:gap-3">
+          {/* AD/BS Toggle */}
+          <div className="hidden sm:flex items-center gap-1 bg-muted p-1 rounded-xl border border-border">
             {(["AD", "BS"] as const).map((mode) => (
                <button
                  key={mode}
                  onClick={() => setCalendarMode(mode)}
-                 className={`px-4 py-2 rounded-xl transition-all text-xs font-black uppercase tracking-widest ${
+                 className={`px-3 py-1.5 rounded-lg transition-all text-[10px] font-black uppercase tracking-widest ${
                    calendarMode === mode
-                     ? "bg-background text-primary shadow-sm shadow-black/5 ring-1 ring-border"
+                     ? "bg-background text-primary shadow-sm"
                      : "text-muted-foreground hover:text-foreground"
                  }`}
                >
@@ -120,84 +116,57 @@ const CalendarHeader: React.FC<CalendarHeaderProps> = ({
             ))}
           </div>
 
-          {/* Nav Controls */}
-          <div className="flex items-center gap-0.5 md:gap-1 bg-muted p-1 rounded-xl md:rounded-2xl border border-border">
-            <button onClick={onPrev} className="p-1.5 md:p-2 hover:bg-background rounded-lg md:rounded-xl transition-all text-muted-foreground hover:text-foreground">
-              <ChevronLeft className="w-4 h-4 md:w-5 md:h-5" />
-            </button>
-            <button onClick={onToday} className="hidden md:block px-4 py-2 text-xs font-bold text-foreground hover:bg-background rounded-xl transition-all">
-              Today
-            </button>
-            <button onClick={onNext} className="p-1.5 md:p-2 hover:bg-background rounded-lg md:rounded-xl transition-all text-muted-foreground hover:text-foreground">
-              <ChevronRight className="w-4 h-4 md:w-5 md:h-5" />
-            </button>
-          </div>
-
-          <div className="hidden xl:flex items-center gap-1 bg-muted p-1.5 rounded-2xl border border-border">
+          {/* View Toggles */}
+          <div className="hidden lg:flex items-center gap-1 bg-muted p-1 rounded-xl border border-border">
             {(["month", "week", "day"] as ViewType[]).map((v) => (
               <button
                 key={v}
                 onClick={() => setView(v)}
-                className={`flex items-center gap-2 px-4 py-2.5 rounded-xl transition-all text-xs font-black uppercase tracking-widest ${
+                className={`flex items-center gap-2 px-3 py-1.5 rounded-lg transition-all text-[10px] font-black uppercase tracking-widest ${
                   view === v
-                    ? "bg-background text-primary shadow-xl shadow-black/5 ring-1 ring-border"
+                    ? "bg-background text-primary shadow-sm"
                     : "text-muted-foreground hover:text-foreground"
                 }`}
               >
-                {v === "month" && <Grid3X3 className="w-3.5 h-3.5" />}
+                {/* {v === "month" && <Grid3X3 className="w-3.5 h-3.5" />}
                 {v === "week" && <Columns className="w-3.5 h-3.5" />}
-                {v === "day" && <Square className="w-3.5 h-3.5" />}
+                {v === "day" && <Square className="w-3.5 h-3.5" />} */}
                 <span>{v}</span>
               </button>
             ))}
           </div>
 
-          {isAdmin && (
-            <button 
-              onClick={onAddEvent}
-              className="hidden lg:flex items-center justify-center gap-2 px-5 py-2.5 bg-primary text-primary-foreground font-black text-sm rounded-2xl shadow-lg shadow-primary/30 hover:opacity-90 active:scale-95 transition-all ml-2"
-            >
-               <Plus className="w-4 h-4 stroke-[3px]" />
-               <span>Create</span>
-            </button>
-          )}
-
           <div className="flex items-center gap-1 md:gap-2">
-            <Link 
-              href="/announcements"
-              className={`relative w-9 h-9 md:w-10 md:h-10 flex items-center justify-center rounded-xl md:rounded-2xl border transition-all ${
-                pathname === "/announcements" ? "bg-primary/10 border-primary text-primary" : "bg-muted border-border text-foreground hover:bg-background"
-              }`}
-              title="Announcements"
-            >
-               <Megaphone className="w-4 h-4 md:w-5 md:h-5" />
-            </Link>
+            {isAdmin && (
+              <button 
+                onClick={onAddEvent}
+                className="hidden md:flex items-center justify-center gap-2 px-4 py-2 bg-primary text-primary-foreground font-black text-xs rounded-xl shadow-lg shadow-primary/20 hover:opacity-90 transition-all"
+              >
+                 <Plus className="w-3.5 h-3.5 stroke-[3px]" />
+                 <span>Event</span>
+              </button>
+            )}
 
-            <ThemeToggle />
-            
             {user && (
               <button 
                 onClick={() => setShowNotifications(true)}
-                className="relative w-9 h-9 md:w-10 md:h-10 flex items-center justify-center rounded-xl md:rounded-2xl bg-muted border border-border text-foreground hover:bg-background transition-all"
+                className="relative w-8 h-8 md:w-10 md:h-10 flex items-center justify-center rounded-xl bg-muted border border-border text-foreground hover:bg-background transition-all"
               >
-                <Bell className="w-4 h-4 md:w-5 md:h-5" />
+                <Bell className="w-4 h-4" />
                 {unreadCount > 0 && (
-                   <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-[9px] font-black rounded-full flex items-center justify-center animate-bounce shadow-lg shadow-red-500/20">
+                   <span className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-red-500 text-white text-[8px] font-black rounded-full flex items-center justify-center">
                       {unreadCount}
                    </span>
                 )}
               </button>
             )}
 
-            <div className="md:hidden">
-               <button 
-                onClick={() => setShowMobileMenu(!showMobileMenu)}
-                className="w-9 h-9 flex items-center justify-center rounded-xl bg-muted border border-border text-foreground md:hidden"
-               >
-                 <Settings2 className="w-4 h-4" />
-               </button>
-            </div>
-            <LoginButton />
+            <button 
+              onClick={() => setShowMobileMenu(!showMobileMenu)}
+              className="w-8 h-8 flex sm:hidden items-center justify-center rounded-xl bg-muted border border-border text-foreground"
+            >
+              <Settings2 className="w-4 h-4" />
+            </button>
           </div>
         </div>
       </div>

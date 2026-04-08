@@ -173,9 +173,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           <div className="flex items-center gap-4">
             <Link 
               href="/"
-              className="text-sm font-bold text-muted-foreground hover:text-primary transition-colors hidden md:block"
+              className="flex items-center gap-2 text-sm font-black text-muted-foreground hover:text-primary transition-colors bg-muted/50 px-3 py-1.5 rounded-xl border border-border"
             >
-              View Public Calendar
+              <ChevronLeft className="w-4 h-4" />
+              Back to Dashboard
             </Link>
             <div className="w-px h-6 bg-border hidden md:block" />
             <ThemeToggle />

@@ -79,7 +79,7 @@ const Calendar: React.FC = () => {
   };
 
   return (
-    <div className="flex flex-col h-[100dvh] w-full overflow-hidden bg-background font-sans selection:bg-primary/20 selection:text-primary">
+    <div className="flex-1 flex flex-col w-full bg-background font-sans selection:bg-primary/20 selection:text-primary">
       <CalendarHeader
         currentDate={currentDate}
         view={view}

@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import Script from "next/script";
 import { Geist } from "next/font/google";
 import "./globals.css";
 
@@ -29,6 +30,7 @@ import { ThemeProvider } from "@/components/ThemeProvider";
 import { AuthProvider } from "@/context/AuthContext";
 import { ConfigProvider } from "@/context/ConfigContext";
 import { ToastProvider } from "@/context/ToastContext";
+import { GlobalHeader } from "@/components/GlobalHeader";
 
 export default function RootLayout({
   children,
@@ -50,12 +52,15 @@ export default function RootLayout({
           <AuthProvider>
             <ConfigProvider>
               <ToastProvider>
+                <GlobalHeader />
                 {children}
               </ToastProvider>
             </ConfigProvider>
           </AuthProvider>
         </ThemeProvider>
-        <script
+        <Script
+          id="register-sw"
+          strategy="afterInteractive"
           dangerouslySetInnerHTML={{
             __html: `
               if ('serviceWorker' in navigator) {

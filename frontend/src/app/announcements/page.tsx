@@ -6,6 +6,7 @@ import Link from "next/link";
 import { motion } from "framer-motion";
 import { fetchApi } from "@/lib/api";
 import { format } from "date-fns";
+import AnnouncementModal from "@/components/AnnouncementModal";
 
 interface Announcement {
   id: number;
@@ -13,11 +14,14 @@ interface Announcement {
   content: string;
   type: "info" | "urgent" | "system";
   created_at: string;
+  image_url?: string;
 }
 
 export default function AnnouncementsPage() {
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedAnnouncement, setSelectedAnnouncement] = useState<Announcement | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   useEffect(() => {
     const load = async () => {
@@ -35,26 +39,6 @@ export default function AnnouncementsPage() {
 
   return (
     <div className="min-h-screen bg-background selection:bg-primary/20">
-      {/* Header */}
-      <header className="bg-background/80 backdrop-blur-xl border-b border-border sticky top-0 z-40">
-        <div className="max-w-4xl mx-auto px-4 h-16 md:h-20 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-all group">
-             <div className="p-2 rounded-xl group-hover:bg-muted transition-colors">
-                <ArrowLeft className="w-5 h-5" />
-             </div>
-             <span className="text-sm font-black uppercase tracking-widest hidden sm:inline">Back to Calendar</span>
-          </Link>
-          
-          <div className="flex items-center gap-3">
-             <div className="p-2 bg-primary/10 text-primary rounded-xl">
-                <Megaphone className="w-5 h-5" />
-             </div>
-             <h1 className="text-lg md:text-xl font-black text-foreground tracking-tight">Public Bulletins</h1>
-          </div>
-
-          <div className="w-10" /> {/* Spacer */}
-        </div>
-      </header>
 
       <main className="max-w-3xl mx-auto px-4 py-8 md:py-16">
         <div className="mb-12">
@@ -84,7 +68,11 @@ export default function AnnouncementsPage() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: index * 0.1 }}
                 key={ann.id}
-                className={`group relative p-6 md:p-8 rounded-[2rem] border transition-all ${
+                onClick={() => {
+                  setSelectedAnnouncement(ann);
+                  setIsModalOpen(true);
+                }}
+                className={`group relative p-6 md:p-8 rounded-[2rem] border transition-all cursor-pointer ${
                   ann.type === 'urgent' 
                     ? 'bg-red-500/5 border-red-500/10 hover:border-red-500/30' 
                     : 'bg-muted/30 border-border hover:border-primary/30'
@@ -133,10 +121,16 @@ export default function AnnouncementsPage() {
              Nepali Calendar Administrative Broadcasting
            </p>
            <Link href="/" className="px-8 py-3 bg-muted border border-border rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-background transition-all active:scale-95">
-              Back to Calendar
+              Back to Dashboard
            </Link>
         </div>
       </main>
+
+      <AnnouncementModal 
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        announcement={selectedAnnouncement}
+      />
     </div>
   );
 }
