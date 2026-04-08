@@ -1,0 +1,62 @@
+version: '3.8'
+
+services:
+  # Database Service
+  db:
+    image: mysql:8.0
+    container_name: calendar-db
+    restart: unless-stopped
+    environment:
+      - MYSQL_DATABASE=calendar_app
+      - MYSQL_ROOT_PASSWORD=Hamilton#44
+      - MYSQL_PASSWORD=Hamilton#44
+    volumes:
+      - db_data:/var/lib/mysql
+    networks:
+      - calendar-network
+
+  # Backend Service (Laravel)
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: calendar-backend
+    restart: unless-stopped
+    environment:
+      - APP_ENV=production
+      - APP_DEBUG=false
+      - DB_CONNECTION=mysql
+      - DB_HOST=db
+      - DB_PORT=3306
+      - DB_DATABASE=calendar_app
+      - DB_USERNAME=root
+      - DB_PASSWORD=Hamilton#44
+    volumes:
+      - ./backend/storage:/var/www/html/storage
+    networks:
+      - calendar-network
+    depends_on:
+      - db
+
+  # Frontend Service (Next.js)
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: calendar-frontend
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - NEXT_PUBLIC_API_URL=http://calendar-backend:80
+    networks:
+      - calendar-network
+    depends_on:
+      - backend
+
+networks:
+  calendar-network:
+    driver: bridge
+
+volumes:
+  db_data:
