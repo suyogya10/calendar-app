@@ -1,0 +1,45 @@
+# Calendar App - Frontend Documentation
+
+## Tech Stack
+- **Framework**: Next.js 16 (App Router)
+- **Library**: React 19
+- **Package Manager**: pnpm 10+
+- **Styling**: TailwindCSS 4 (CSS-first configuration)
+- **Dates**: date-fns
+- **Icons**: lucide-react
+- **Types**: TypeScript 5
+
+## Getting Started
+
+1. **Install dependencies**:
+   ```bash
+   pnpm install
+   ```
+
+2. **Run the development server**:
+   ```bash
+   pnpm dev
+   ```
+   Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+
+3. **Build for production**:
+   ```bash
+   pnpm build
+   ```
+
+4. **Start production server**:
+   ```bash
+   pnpm start
+   ```
+
+## Directory Structure
+- `src/app`: Main routing and page layouts.
+- `src/components`: UI components (including Calendar views).
+- `src/lib`: Utility functions and date manipulations.
+- `src/styles`: Any global CSS or themes.
+
+## Coding Standards
+- Clean, modular component architecture.
+- Full TypeScript support.
+- Tailwind 4 utility classes for styling.
+- Accessibility-first approach.

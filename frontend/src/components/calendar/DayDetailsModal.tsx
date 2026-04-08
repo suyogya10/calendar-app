@@ -1,0 +1,161 @@
+"use client";
+
+import React from "react";
+import { format } from "date-fns";
+import { X, Clock, Plus, Flag, CalendarDays, AlignLeft } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { useConfig } from "@/context/ConfigContext";
+import { useAuth } from "@/context/AuthContext";
+
+interface DayDetailsModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  selectedDate: Date | null;
+  onAddEvent: (date: Date) => void;
+}
+
+// Helper to parse local API time Strings safely
+function parseLocal(dtStr: string | null | undefined): Date | null {
+  if (!dtStr) return null;
+  const s = dtStr.replace('T', ' ').slice(0, 19);
+  const [datePart, timePart = '00:00:00'] = s.split(' ');
+  const [year, month, day] = datePart.split('-').map(Number);
+  const [hour, minute, second] = timePart.split(':').map(Number);
+  return new Date(year, month - 1, day, hour, minute, second);
+}
+
+export function DayDetailsModal({ isOpen, onClose, selectedDate, onAddEvent }: DayDetailsModalProps) {
+  const { apiEvents, apiHolidays } = useConfig();
+  const { role } = useAuth();
+  const isAdmin = role === "ADMIN";
+
+  if (!selectedDate) return null;
+
+  const dateStr = format(selectedDate, "yyyy-MM-dd");
+  const dayEvents = apiEvents.filter((e) => e.start_time.startsWith(dateStr));
+  const dayHolidays = apiHolidays.filter((h) => h.date === dateStr);
+  const hasItems = dayEvents.length > 0 || dayHolidays.length > 0;
+
+  // Try to find Nepali date string from the payload if available
+  const nepaliDateStr = dayEvents[0]?.bs_start_time_nepali || dayHolidays[0]?.bs_date_nepali || null;
+
+  return (
+    <AnimatePresence>
+      {isOpen && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={onClose}
+            className="absolute inset-0 bg-background/60 backdrop-blur-md"
+          />
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95, y: 20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.95, y: 20 }}
+            className="relative w-full max-w-md bg-background border border-border shadow-2xl rounded-3xl overflow-hidden flex flex-col max-h-[85vh]"
+          >
+            {/* Header */}
+            <div className="flex flex-col p-6 border-b border-border bg-muted/20 relative shrink-0">
+              <button
+                onClick={onClose}
+                className="absolute top-4 right-4 p-2 hover:bg-muted rounded-full text-muted-foreground transition-colors active:scale-90"
+              >
+                <X className="w-5 h-5" />
+              </button>
+
+              <div className="flex items-center gap-4 mt-2">
+                <div className="flex flex-col items-center justify-center bg-primary/10 text-primary w-16 h-16 rounded-2xl border border-primary/20">
+                  <span className="text-xs font-bold uppercase">{format(selectedDate, "MMM")}</span>
+                  <span className="text-2xl font-black">{format(selectedDate, "d")}</span>
+                </div>
+                <div>
+                  <h2 className="text-2xl font-black text-foreground">{format(selectedDate, "EEEE")}</h2>
+                  <p className="text-sm font-semibold text-muted-foreground">
+                    {format(selectedDate, "MMMM d, yyyy")}
+                  </p>
+                  {nepaliDateStr && (
+                    <p className="text-xs font-bold text-holiday mt-0.5">{nepaliDateStr}</p>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Content list */}
+            <div className="p-6 overflow-y-auto custom-scrollbar flex-1 flex flex-col gap-4">
+              {!hasItems && (
+                <div className="flex flex-col items-center justify-center py-10 text-muted-foreground opacity-60">
+                  <CalendarDays className="w-12 h-12 mb-3 opacity-50" />
+                  <p className="text-sm font-bold">No events for this day</p>
+                </div>
+              )}
+
+              {/* Holidays */}
+              {dayHolidays.map((h) => (
+                <div key={h.id} className={`flex flex-col p-4 rounded-2xl border-2 ${h.type === 'FULL' ? 'border-red-500/20 bg-red-500/5' : 'border-green-500/20 bg-green-500/5'}`}>
+                  <div className="flex items-center gap-2 mb-1">
+                    <Flag className={`w-4 h-4 ${h.type === 'FULL' ? 'text-red-500' : 'text-green-600'}`} />
+                    <h3 className={`font-black text-lg ${h.type === 'FULL' ? 'text-red-600' : 'text-green-700'}`}>{h.title}</h3>
+                  </div>
+                  <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider ml-6">
+                    {h.type === 'FULL' ? 'Full Public Holiday' : 'Half Holiday'}
+                  </p>
+                  {h.description && (
+                    <p className="text-sm font-medium mt-2 opacity-80 ml-6">{h.description}</p>
+                  )}
+                </div>
+              ))}
+
+              {/* Events */}
+              {dayEvents.map((e) => {
+                const start = parseLocal(e.start_time);
+                const end = parseLocal(e.end_time);
+
+                return (
+                  <div key={e.id} className="flex flex-col p-4 rounded-2xl border border-border bg-background shadow-sm">
+                    <div className="flex justify-between items-start gap-4">
+                      <h3 className="font-bold text-lg text-foreground leading-tight">{e.title}</h3>
+                      {e.is_all_day ? (
+                        <span className="shrink-0 px-2 py-1 bg-primary/10 text-primary text-[10px] font-black uppercase rounded-md border border-primary/20">All Day</span>
+                      ) : (
+                        start && (
+                          <div className="shrink-0 flex items-center gap-1.5 text-xs font-bold text-muted-foreground bg-muted px-2 py-1 rounded-md">
+                            <Clock className="w-3 h-3" />
+                            {format(start, "h:mm a")} {end && `- ${format(end, "h:mm a")}`}
+                          </div>
+                        )
+                      )}
+                    </div>
+                    {e.description && (
+                      <div className="flex items-start gap-2 mt-3 text-sm text-muted-foreground bg-muted/40 p-3 rounded-xl">
+                        <AlignLeft className="w-4 h-4 mt-0.5 shrink-0 opacity-50" />
+                        <p>{e.description}</p>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Footer */}
+            {isAdmin && (
+              <div className="p-4 bg-muted/20 border-t border-border shrink-0">
+                <button
+                  onClick={() => {
+                    onClose();
+                    onAddEvent(selectedDate);
+                  }}
+                  className="w-full flex items-center justify-center gap-2 px-6 py-3.5 bg-primary text-primary-foreground font-black text-sm rounded-xl shadow-lg shadow-primary/20 hover:opacity-90 active:scale-[0.98] transition-all"
+                >
+                  <Plus className="w-5 h-5" />
+                  Add Event
+                </button>
+              </div>
+            )}
+          </motion.div>
+        </div>
+      )}
+    </AnimatePresence>
+  );
+}

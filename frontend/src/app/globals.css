@@ -1,26 +1,97 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #fdfdfd;
+  --foreground: #0f172a;
+  
+  --brand-blue: #2d3891;
+  --brand-green: #8fc742;
+  --brand-orange: #fcb446;
+
+  /* Semantic UI Colors - Light */
+  --primary: var(--brand-blue);
+  --primary-foreground: #ffffff;
+  
+  --secondary: var(--brand-green);
+  --accent: var(--brand-orange);
+  
+  --card: #ffffff;
+  --muted: #f4f4f5;
+  --muted-foreground: #71717a;
+  --border: #e4e4e7;
+  
+  --holiday: #dc2626;
+  --holiday-bg: #fef2f2;
+}
+
+.dark {
+  /* Deep Obsidian Dark Mode */
+  --background: #090a0f; /* Very deep dark tint */
+  --foreground: #f8fafc; /* Crisp white-slate text */
+
+  /* Vibrant Accents */
+  --primary: #3b82f6; /* Strong readable blue */
+  --primary-foreground: #ffffff;
+  
+  --secondary: #22c55e; /* Strong green */
+  --accent: #f97316; /* Strong orange */
+  
+  --card: #11131a; /* Distinctly darker cards */
+  --muted: #1e2230; /* Subtle grayish-blue surface */
+  --muted-foreground: #94a3b8; /* Slate 400 */
+  --border: #2e3547; /* Slate 800-ish */
+  
+  --holiday: #ef4444; /* Readable Red */
+  --holiday-bg: #351315; /* Extremely dark red overlay */
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
+  
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  
+  --color-secondary: var(--secondary);
+  --color-accent: var(--accent);
+  
+  --color-card: var(--card);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-border: var(--border);
+  
+  --color-holiday: var(--holiday);
+  --color-holiday-bg: var(--holiday-bg);
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --color-brand-blue: var(--brand-blue);
+  --brand-blue: var(--brand-blue);
+  --color-brand-green: var(--brand-green);
+  --color-brand-orange: var(--brand-orange);
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-geist-sans), ui-sans-serif, system-ui, -apple-system;
+  -webkit-font-smoothing: antialiased;
+  scrollbar-gutter: stable;
 }
+
+/* Custom Scrollbar */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(161, 161, 170, 0.2);
+  border-radius: 10px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(161, 161, 170, 0.4);
+}
+
