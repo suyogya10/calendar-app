@@ -10,6 +10,10 @@ import {
   Cloud, 
   Sun, 
   CloudRain, 
+  CloudLightning,
+  CloudSun,
+  Droplets,
+  Wind,
   Clock, 
   Megaphone,
   LayoutGrid,
@@ -34,6 +38,8 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [selectedAnnouncement, setSelectedAnnouncement] = useState<any | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [weather, setWeather] = useState<any>(null);
+  const [loadingWeather, setLoadingWeather] = useState(true);
 
   // Update clock every minute
   useEffect(() => {
@@ -55,6 +61,44 @@ export default function Dashboard() {
     };
     load();
   }, []);
+
+  // Fetch weather for Kathmandu
+  useEffect(() => {
+    const fetchWeather = async () => {
+      try {
+        const res = await fetch("https://api.open-meteo.com/v1/forecast?latitude=27.7172&longitude=85.3240&current=temperature_2m,relative_humidity_2m,weather_code,wind_speed_10m&timezone=auto");
+        const data = await res.json();
+        setWeather(data.current);
+      } catch (e) {
+        console.error("Failed to fetch weather", e);
+      } finally {
+        setLoadingWeather(false);
+      }
+    };
+    fetchWeather();
+    const interval = setInterval(fetchWeather, 30 * 60 * 1000); // Update every 30 mins
+    return () => clearInterval(interval);
+  }, []);
+
+  const getWeatherIcon = (code: number) => {
+    if (code === 0) return <Sun className="w-16 h-16 text-amber-500 animate-pulse" />;
+    if (code >= 1 && code <= 3) return <CloudSun className="w-16 h-16 text-amber-400 animate-pulse" />;
+    if (code >= 45 && code <= 48) return <Cloud className="w-16 h-16 text-zinc-400 animate-pulse" />;
+    if (code >= 51 && code <= 67) return <CloudRain className="w-16 h-16 text-blue-500 animate-pulse" />;
+    if (code >= 80 && code <= 82) return <CloudRain className="w-16 h-16 text-indigo-500 animate-pulse" />;
+    if (code >= 95) return <CloudLightning className="w-16 h-16 text-yellow-500 animate-pulse" />;
+    return <Sun className="w-16 h-16 text-amber-500 animate-pulse" />;
+  };
+
+  const getWeatherDescription = (code: number) => {
+    if (code === 0) return "Clear Sky";
+    if (code >= 1 && code <= 3) return "Partly Cloudy";
+    if (code >= 45 && code <= 48) return "Foggy";
+    if (code >= 51 && code <= 67) return "Raining";
+    if (code >= 80 && code <= 82) return "Showers";
+    if (code >= 95) return "Thunderstorm";
+    return "Clear Sky";
+  };
 
   const otherApps = [
     { title: "Office Mail", icon: Mail, color: "bg-blue-500", url: "#" },
@@ -184,21 +228,45 @@ export default function Dashboard() {
                  <h3 className="text-sm font-black uppercase tracking-wider text-muted-foreground">Weather</h3>
                  <span className="text-[10px] font-black bg-emerald-500/10 text-emerald-500 px-2 py-0.5 rounded-full uppercase">Live</span>
               </div>
-              <div className="flex items-center gap-6">
-                <Sun className="w-16 h-16 text-amber-500 animate-pulse" />
-                <div>
-                  <div className="text-4xl font-black text-foreground">28°<span className="text-xl opacity-50">C</span></div>
-                  <p className="text-sm font-bold text-muted-foreground">Sunny in Butwal</p>
+              
+              {loadingWeather ? (
+                <div className="flex items-center gap-6 animate-pulse">
+                  <div className="w-16 h-16 bg-muted rounded-full" />
+                  <div className="space-y-2">
+                    <div className="h-8 w-20 bg-muted rounded" />
+                    <div className="h-4 w-32 bg-muted rounded" />
+                  </div>
                 </div>
-              </div>
+              ) : weather ? (
+                <div className="flex items-center gap-6">
+                  {getWeatherIcon(weather.weather_code)}
+                  <div>
+                    <div className="text-4xl font-black text-foreground">
+                      {Math.round(weather.temperature_2m)}°<span className="text-xl opacity-50">C</span>
+                    </div>
+                    <p className="text-sm font-bold text-muted-foreground">
+                      {getWeatherDescription(weather.weather_code)} in Kathmandu
+                    </p>
+                  </div>
+                </div>
+              ) : (
+                <p className="text-sm text-muted-foreground italic">Weather data unavailable</p>
+              )}
+
               <div className="mt-8 grid grid-cols-2 gap-4">
-                 <div className="p-3 bg-muted/30 rounded-2xl">
-                    <span className="block text-[10px] font-black text-muted-foreground uppercase mb-1">Humidity</span>
-                    <span className="text-sm font-black">45%</span>
+                 <div className="p-3 bg-muted/30 rounded-2xl flex items-center gap-2">
+                    <Droplets className="w-4 h-4 text-blue-500/50" />
+                    <div>
+                      <span className="block text-[10px] font-black text-muted-foreground uppercase mb-0.5">Humidity</span>
+                      <span className="text-sm font-black">{weather?.relative_humidity_2m || '--'}%</span>
+                    </div>
                  </div>
-                 <div className="p-3 bg-muted/30 rounded-2xl">
-                    <span className="block text-[10px] font-black text-muted-foreground uppercase mb-1">Wind</span>
-                    <span className="text-sm font-black">12 km/h</span>
+                 <div className="p-3 bg-muted/30 rounded-2xl flex items-center gap-2">
+                    <Wind className="w-4 h-4 text-emerald-500/50" />
+                    <div>
+                      <span className="block text-[10px] font-black text-muted-foreground uppercase mb-0.5">Wind</span>
+                      <span className="text-sm font-black">{weather?.wind_speed_10m || '--'} <span className="text-[10px]">km/h</span></span>
+                    </div>
                  </div>
               </div>
             </div>
