@@ -28,19 +28,19 @@ class EventController extends Controller
         $user = $request->user();
         if (!$user) return response()->json(['events' => [], 'holidays' => \App\Models\Holiday::all()]);
 
-        if ($user->is_admin) {
-            return response()->json([
-                'events' => Event::with('user')->orderBy('start_time')->get(),
-                'holidays' => \App\Models\Holiday::all()
-            ]);
-        }
-
-        // For Staff: My events + Public events + Department events
         $events = Event::with('user')
             ->where(function($q) use ($user) {
+                // Everyone sees their own events + public events
                 $q->where('user_id', $user->id)
-                  ->orWhere('is_public', true)
-                  ->orWhere('department', $user->department);
+                  ->orWhere('is_public', true);
+                
+                if ($user->is_admin) {
+                    // Admins also see all events shared with ANY department
+                    $q->orWhereNotNull('department');
+                } elseif ($user->department) {
+                    // Staff only see events shared with THEIR department
+                    $q->orWhere('department', $user->department);
+                }
             })
             ->orderBy('start_time')
             ->get();
@@ -82,19 +82,12 @@ class EventController extends Controller
 
         $event = $request->user()->events()->create($validated);
 
-        // Notify department if shared
+        // Notify department if shared via email
         if ($event->department) {
             \App\Models\User::where('department', $event->department)
                 ->where('id', '!=', $request->user()->id)
                 ->get()
                 ->each(function($u) use ($event) {
-                    $u->notifications()->create([
-                        'title' => 'New Shared Event',
-                        'message' => "A new event '{$event->title}' has been shared with your department.",
-                        'type' => 'event',
-                        'link' => '/'
-                    ]);
-                    
                     try {
                         $u->notify(new \App\Notifications\GeneralNotification(
                             'Shared Event: ' . $event->title,

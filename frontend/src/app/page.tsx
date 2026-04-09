@@ -40,6 +40,7 @@ export default function Dashboard() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [weather, setWeather] = useState<any>(null);
   const [loadingWeather, setLoadingWeather] = useState(true);
+  const [officeApps, setOfficeApps] = useState<any[]>([]);
 
   // Update clock every minute
   useEffect(() => {
@@ -60,6 +61,19 @@ export default function Dashboard() {
       }
     };
     load();
+  }, []);
+
+  // Fetch office apps
+  useEffect(() => {
+    const loadApps = async () => {
+      try {
+        const data = await fetchApi("/office-apps");
+        setOfficeApps(data || []);
+      } catch (e) {
+        console.error("Failed to load office apps", e);
+      }
+    };
+    loadApps();
   }, []);
 
   // Fetch weather for Kathmandu
@@ -100,12 +114,19 @@ export default function Dashboard() {
     return "Clear Sky";
   };
 
-  const otherApps = [
-    { title: "Office Mail", icon: Mail, color: "bg-blue-500", url: "#" },
-    { title: "HR Portal", icon: UserCircle, color: "bg-purple-500", url: "#" },
-    { title: "Documents", icon: FileText, color: "bg-amber-500", url: "#" },
-    { title: "Support Hub", icon: LayoutGrid, color: "bg-emerald-500", url: "#" },
-  ];
+  const getAppColor = (title: string) => {
+    const colors = [
+      "bg-blue-500", "bg-emerald-500", "bg-amber-500", "bg-rose-500", 
+      "bg-indigo-500", "bg-violet-500", "bg-cyan-500", "bg-orange-500"
+    ];
+    let hash = 0;
+    for (let i = 0; i < title.length; i++) {
+        hash = title.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    return colors[Math.abs(hash) % colors.length];
+  };
+
+
 
   const containerVariants = {
     hidden: { opacity: 0 },
@@ -178,44 +199,57 @@ export default function Dashboard() {
                 </div>
               </Link>
 
-              {/* Admin Panel (Conditional) or Generic Action */}
-              {role === "ADMIN" ? (
-                <Link href="/admin">
-                  <div className="group h-full bg-card border border-border rounded-[2rem] p-6 hover:shadow-2xl hover:shadow-amber-500/5 hover:border-amber-500/50 transition-all duration-300">
-                    <div className="flex items-center justify-between mb-4">
-                      <div className="w-12 h-12 bg-amber-500/10 text-amber-500 rounded-2xl flex items-center justify-center group-hover:bg-amber-500 group-hover:text-white transition-all">
-                        <ShieldCheck className="w-6 h-6" />
-                      </div>
-                      <div className="p-2 rounded-xl bg-muted group-hover:bg-amber-500/10 transition-colors">
-                        <ChevronRight className="w-4 h-4" />
-                      </div>
+            {/* Admin Panel (Conditional) */}
+            {role === "ADMIN" && (
+              <Link href="/admin">
+                <div className="group h-full bg-card border border-border rounded-[2rem] p-6 hover:shadow-2xl hover:shadow-amber-500/5 hover:border-amber-500/50 transition-all duration-300">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="w-12 h-12 bg-amber-500/10 text-amber-500 rounded-2xl flex items-center justify-center group-hover:bg-amber-500 group-hover:text-white transition-all">
+                      <ShieldCheck className="w-6 h-6" />
                     </div>
-                    <h3 className="text-xl font-black text-foreground mb-1">Admin Control</h3>
-                    <p className="text-sm font-medium text-muted-foreground">Manage users, announcements, and global settings.</p>
+                    <div className="p-2 rounded-xl bg-muted group-hover:bg-amber-500/10 transition-colors">
+                      <ChevronRight className="w-4 h-4" />
+                    </div>
                   </div>
-                </Link>
-              ) : (
-                <div className="group h-full bg-white/50 dark:bg-zinc-900/50 border border-dashed border-border/100 rounded-[2rem] p-6 flex flex-col items-center justify-center text-center">
-                   <div className="w-12 h-12 bg-muted rounded-full flex items-center justify-center mb-4">
-                      <Plus className="w-6 h-6 text-muted-foreground" />
-                   </div>
-                   <p className="text-sm font-bold text-muted-foreground">More features coming soon</p>
+                  <h3 className="text-xl font-black text-foreground mb-1">Admin Control</h3>
+                  <p className="text-sm font-medium text-muted-foreground">Manage users, announcements, and global settings.</p>
                 </div>
-              )}
+              </Link>
+            )}
             </div>
             
             {/* Apps Listing */}
             <div>
               <h3 className="text-xs font-black uppercase tracking-[0.2em] text-muted-foreground mb-6 ml-1">Office Applications</h3>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                {otherApps.map((app, i) => (
-                  <a key={i} href={app.url} className="group p-4 bg-card border border-border rounded-2xl flex flex-col items-center gap-3 hover:border-primary/50 hover:-translate-y-1 transition-all">
-                    <div className={`w-10 h-10 ${app.color} text-white rounded-xl flex items-center justify-center shadow-lg shadow-${app.color.split('-')[1]}-500/20`}>
-                      <app.icon className="w-5 h-5" />
+                {officeApps.map((app, i) => (
+                  <a 
+                    key={app.id || i} 
+                    href={app.url} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="group p-4 bg-card border border-border rounded-2xl flex flex-col items-center gap-3 hover:border-primary/50 hover:-translate-y-1 transition-all"
+                  >
+                    <div className={`w-12 h-12 rounded-xl border border-border overflow-hidden flex items-center justify-center shrink-0 group-hover:shadow-lg transition-all ${!app.icon_url ? getAppColor(app.title) : 'bg-muted'}`}>
+                       {app.icon_url ? (
+                          <img 
+                            src={app.icon_url.startsWith('http') ? app.icon_url : `http://127.0.0.1:8000${app.icon_url}`} 
+                            alt={app.title} 
+                            className="w-full h-full object-cover" 
+                          />
+                       ) : (
+                          <span className="text-xl font-black text-white uppercase">{app.title.charAt(0)}</span>
+                       )}
                     </div>
-                    <span className="text-xs font-black text-foreground text-center">{app.title}</span>
+                    <span className="text-xs font-black text-foreground text-center line-clamp-1">{app.title}</span>
                   </a>
                 ))}
+                
+                {officeApps.length === 0 && !loading && (
+                   <div className="col-span-full py-8 text-center border-2 border-dashed border-border rounded-2xl opacity-40">
+                      <p className="text-xs font-black uppercase tracking-widest">No applications added</p>
+                   </div>
+                )}
               </div>
             </div>
           </motion.div>

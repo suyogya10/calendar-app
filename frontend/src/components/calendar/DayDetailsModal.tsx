@@ -27,8 +27,9 @@ function parseLocal(dtStr: string | null | undefined): Date | null {
 
 export function DayDetailsModal({ isOpen, onClose, selectedDate, onAddEvent }: DayDetailsModalProps) {
   const { apiEvents, apiHolidays } = useConfig();
-  const { role } = useAuth();
+  const { role, user } = useAuth();
   const isAdmin = role === "ADMIN";
+  const isPublic = role === "PUBLIC";
 
   if (!selectedDate) return null;
 
@@ -141,7 +142,7 @@ export function DayDetailsModal({ isOpen, onClose, selectedDate, onAddEvent }: D
             </div>
 
             {/* Footer */}
-            {isAdmin && (
+            {!isPublic && (
               <div className="p-4 bg-muted/20 border-t border-border shrink-0">
                 <button
                   onClick={() => {
