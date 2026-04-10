@@ -6,6 +6,7 @@ import { X, Clock, Plus, Flag, CalendarDays, AlignLeft } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useConfig } from "@/context/ConfigContext";
 import { useAuth } from "@/context/AuthContext";
+import NepaliDate from "nepali-datetime";
 
 interface DayDetailsModalProps {
   isOpen: boolean;
@@ -26,8 +27,9 @@ function parseLocal(dtStr: string | null | undefined): Date | null {
 
 export function DayDetailsModal({ isOpen, onClose, selectedDate, onAddEvent }: DayDetailsModalProps) {
   const { apiEvents, apiHolidays } = useConfig();
-  const { role } = useAuth();
+  const { role, user } = useAuth();
   const isAdmin = role === "ADMIN";
+  const isPublic = role === "PUBLIC";
 
   if (!selectedDate) return null;
 
@@ -36,8 +38,9 @@ export function DayDetailsModal({ isOpen, onClose, selectedDate, onAddEvent }: D
   const dayHolidays = apiHolidays.filter((h) => h.date === dateStr);
   const hasItems = dayEvents.length > 0 || dayHolidays.length > 0;
 
-  // Try to find Nepali date string from the payload if available
-  const nepaliDateStr = dayEvents[0]?.bs_start_time_nepali || dayHolidays[0]?.bs_date_nepali || null;
+  // Universal Nepali date string for the header
+  const nd = new NepaliDate(selectedDate);
+  const nepaliDateStr = nd.format("MMMM D, YYYY");
 
   return (
     <AnimatePresence>
@@ -139,7 +142,7 @@ export function DayDetailsModal({ isOpen, onClose, selectedDate, onAddEvent }: D
             </div>
 
             {/* Footer */}
-            {isAdmin && (
+            {!isPublic && (
               <div className="p-4 bg-muted/20 border-t border-border shrink-0">
                 <button
                   onClick={() => {

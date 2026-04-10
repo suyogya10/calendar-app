@@ -6,6 +6,8 @@ import { format } from "date-fns";
 import { motion, AnimatePresence } from "framer-motion";
 import { fetchApi } from "@/lib/api";
 import { useConfig, ApiEvent, ApiHoliday } from "@/context/ConfigContext";
+import { useAuth } from "@/context/AuthContext";
+import NepaliDate from "nepali-datetime";
 
 // Reads API datetime strings ("YYYY-MM-DD HH:MM:SS") as local time,
 // avoiding the UTC→local shift that new Date() / parseISO() would cause.
@@ -40,6 +42,8 @@ const Toggle = ({ value, onChange }: { value: boolean; onChange: () => void }) =
 );
 
 export function EventModal({ isOpen, onClose, eventToEdit, selectedDate, initialTime, onSaved }: EventModalProps) {
+  const { role, user } = useAuth();
+  const isAdmin = role === "ADMIN";
   const { refreshApiData } = useConfig();
   const isEditMode = !!eventToEdit;
 
@@ -50,28 +54,31 @@ export function EventModal({ isOpen, onClose, eventToEdit, selectedDate, initial
   const [startTime, setStartTime] = useState(initialTime || "09:00");
   const [endTime, setEndTime] = useState("10:00");
   const [isAllDay, setIsAllDay] = useState(false);
-  const [isPublic, setIsPublic] = useState(true);
+  const [isPublic, setIsPublic] = useState(isAdmin); // Admins default to public, others to private
   const [department, setDepartment] = useState("");
   const [isHoliday, setIsHoliday] = useState(false);
   const [holidayType, setHolidayType] = useState<HolidayType>("FULL");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState("");
 
-  const [departments, setDepartments] = useState<string[]>([]);
+  // Only admins get to see/choose all departments
+  const [availableDepartments, setAvailableDepartments] = useState<string[]>([]);
 
   useEffect(() => {
-    if (isOpen) {
       const loadDepts = async () => {
         try {
-          const data = await fetchApi("/users/departments");
-          setDepartments(data || []);
+          if (isAdmin) {
+             const data = await fetchApi("/users/departments");
+             setAvailableDepartments(data || []);
+          } else if (user?.department) {
+             setAvailableDepartments([user.department]);
+          }
         } catch (e) {
           console.error("Failed to load departments", e);
         }
       };
       loadDepts();
-    }
-  }, [isOpen]);
+  }, [isOpen, isAdmin, user]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -111,7 +118,7 @@ export function EventModal({ isOpen, onClose, eventToEdit, selectedDate, initial
       setStartTime(initialTime || "09:00");
       setEndTime("10:00");
       setIsAllDay(false);
-      setIsPublic(true);
+      setIsPublic(isAdmin);
       setDepartment("");
       setIsHoliday(false);
       setHolidayType("FULL");
@@ -217,17 +224,19 @@ export function EventModal({ isOpen, onClose, eventToEdit, selectedDate, initial
 
             {/* Body */}
             <div className="p-6 space-y-5 overflow-y-auto custom-scrollbar">
-              {/* Holiday Toggle */}
-              <div className={`flex items-center justify-between p-4 rounded-2xl border transition-colors ${isHoliday ? (holidayType === "FULL" ? "bg-red-500/10 border-red-500/20" : "bg-green-500/10 border-green-500/20") : "bg-muted/30 border-border"}`}>
-                <div className="flex items-center gap-2">
-                  <Flag className={`w-4 h-4 ${isHoliday ? (holidayType === "FULL" ? "text-red-500" : "text-green-600") : "text-muted-foreground"}`} />
-                  <div>
-                    <p className="text-sm font-bold text-foreground">Mark as Holiday</p>
-                    <p className="text-xs text-muted-foreground">Saves as a calendar holiday instead of event</p>
+              {/* Holiday Toggle (Admin Only) */}
+              {isAdmin && (
+                <div className={`flex items-center justify-between p-4 rounded-2xl border transition-colors ${isHoliday ? (holidayType === "FULL" ? "bg-red-500/10 border-red-500/20" : "bg-green-500/10 border-green-500/20") : "bg-muted/30 border-border"}`}>
+                  <div className="flex items-center gap-2">
+                    <Flag className={`w-4 h-4 ${isHoliday ? (holidayType === "FULL" ? "text-red-500" : "text-green-600") : "text-muted-foreground"}`} />
+                    <div>
+                      <p className="text-sm font-bold text-foreground">Mark as Holiday</p>
+                      <p className="text-xs text-muted-foreground">Saves as a calendar holiday instead of event</p>
+                    </div>
                   </div>
+                  <Toggle value={isHoliday} onChange={() => setIsHoliday(!isHoliday)} />
                 </div>
-                <Toggle value={isHoliday} onChange={() => setIsHoliday(!isHoliday)} />
-              </div>
+              )}
 
               {/* Holiday Type Selector (shown when isHoliday) */}
               {isHoliday && (
@@ -329,16 +338,18 @@ export function EventModal({ isOpen, onClose, eventToEdit, selectedDate, initial
 
                   {/* Public Toggle */}
                   <div className="space-y-4">
-                    <div className="flex items-center justify-between p-4 bg-muted/30 border border-border rounded-2xl">
-                      <div className="flex items-center gap-2">
-                        <Globe className="w-4 h-4 text-primary" />
-                        <div>
-                          <p className="text-sm font-bold text-foreground">Public Event</p>
-                          <p className="text-xs text-muted-foreground">Visible on the public calendar</p>
+                    {isAdmin && (
+                      <div className="flex items-center justify-between p-4 bg-muted/30 border border-border rounded-2xl">
+                        <div className="flex items-center gap-2">
+                          <Globe className="w-4 h-4 text-primary" />
+                          <div>
+                            <p className="text-sm font-bold text-foreground">Public Event</p>
+                            <p className="text-xs text-muted-foreground">Visible on the public calendar</p>
+                          </div>
                         </div>
+                        <Toggle value={isPublic} onChange={() => setIsPublic(!isPublic)} />
                       </div>
-                      <Toggle value={isPublic} onChange={() => setIsPublic(!isPublic)} />
-                    </div>
+                    )}
 
                     {!isPublic && (
                        <div className="space-y-2 p-4 bg-muted/20 border border-border rounded-2xl animate-in fade-in slide-in-from-top-1 duration-200">
@@ -352,7 +363,7 @@ export function EventModal({ isOpen, onClose, eventToEdit, selectedDate, initial
                             className="w-full px-4 py-3 bg-background border border-border rounded-xl text-sm font-bold text-foreground outline-none focus:ring-2 focus:ring-primary/50"
                           >
                             <option value="">Personal (Private)</option>
-                            {departments.map(dept => (
+                            {availableDepartments.map(dept => (
                               <option key={dept} value={dept}>{dept}</option>
                             ))}
                           </select>

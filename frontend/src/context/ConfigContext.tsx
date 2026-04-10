@@ -81,7 +81,12 @@ export function ConfigProvider({ children }: { children: React.ReactNode }) {
   const refreshApiData = async () => {
     try {
       // 1. Fetch Events & Holidays
-      const data = await fetchApi("/public-calendar");
+      // If logged in, use /events to get personal + department + public
+      // If not, use /public-calendar
+      const hasToken = typeof window !== "undefined" && !!localStorage.getItem("auth_token");
+      const endpoint = hasToken ? "/events" : "/public-calendar";
+      
+      const data = await fetchApi(endpoint);
       setApiEvents(data.events || []);
       setApiHolidays(data.holidays || []);
 

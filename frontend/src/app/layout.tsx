@@ -17,12 +17,12 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
-  title: "Calendar",
-  description: "A premium mobile-first calendar PWA",
+  title: "Dashboard",
+  description: "A premium mobile-first office dashboard PWA",
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
-    title: "Calendar",
+    title: "Dashboard",
   },
 };
 

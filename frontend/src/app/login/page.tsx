@@ -41,9 +41,9 @@ export default function LoginPage() {
       success(`Welcome back, ${res.data.name}!`);
       
       if (res.data.is_admin) {
-        router.push("/admin");
+        window.location.href = "/admin";
       } else {
-        router.push("/");
+        window.location.href = "/";
       }
     } catch (err: any) {
       dismiss(loadingId);

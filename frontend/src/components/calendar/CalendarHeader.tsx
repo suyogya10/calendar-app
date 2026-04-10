@@ -24,7 +24,6 @@ import { useAuth } from "@/context/AuthContext";
 import { useConfig } from "@/context/ConfigContext";
 import { fetchApi } from "@/lib/api";
 import NepaliDate from "nepali-datetime";
-import NotificationDrawer from "./NotificationDrawer";
 
 type ViewType = "month" | "week" | "day";
 
@@ -51,8 +50,6 @@ const CalendarHeader: React.FC<CalendarHeaderProps> = ({
   const isAdmin = role === "ADMIN";
   const { calendarMode, setCalendarMode, settings } = useConfig();
   const [showMobileMenu, setShowMobileMenu] = useState(false);
-  const [showNotifications, setShowNotifications] = useState(false);
-  const [unreadCount, setUnreadCount] = useState(0);
   const pathname = usePathname();
   
   const nd = new NepaliDate(currentDate);
@@ -60,20 +57,7 @@ const CalendarHeader: React.FC<CalendarHeaderProps> = ({
     ? nd.format("MMMM YYYY") 
     : format(currentDate, "MMMM yyyy");
 
-  useEffect(() => {
-    if (!user) return;
-    const fetchUnread = async () => {
-      try {
-        const notes = await fetchApi("/notifications");
-        setUnreadCount(notes.filter((n: any) => !n.is_read).length);
-      } catch (e) {
-        console.error(e);
-      }
-    };
-    fetchUnread();
-    const interval = setInterval(fetchUnread, 30000);
-    return () => clearInterval(interval);
-  }, [user]);
+
 
   return (
     <>
@@ -137,7 +121,7 @@ const CalendarHeader: React.FC<CalendarHeaderProps> = ({
           </div>
 
           <div className="flex items-center gap-1 md:gap-2">
-            {isAdmin && (
+            {user && (
               <button 
                 onClick={onAddEvent}
                 className="hidden md:flex items-center justify-center gap-2 px-4 py-2 bg-primary text-primary-foreground font-black text-xs rounded-xl shadow-lg shadow-primary/20 hover:opacity-90 transition-all"
@@ -147,19 +131,7 @@ const CalendarHeader: React.FC<CalendarHeaderProps> = ({
               </button>
             )}
 
-            {user && (
-              <button 
-                onClick={() => setShowNotifications(true)}
-                className="relative w-8 h-8 md:w-10 md:h-10 flex items-center justify-center rounded-xl bg-muted border border-border text-foreground hover:bg-background transition-all"
-              >
-                <Bell className="w-4 h-4" />
-                {unreadCount > 0 && (
-                   <span className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-red-500 text-white text-[8px] font-black rounded-full flex items-center justify-center">
-                      {unreadCount}
-                   </span>
-                )}
-              </button>
-            )}
+
 
             <button 
               onClick={() => setShowMobileMenu(!showMobileMenu)}
@@ -171,7 +143,7 @@ const CalendarHeader: React.FC<CalendarHeaderProps> = ({
         </div>
       </div>
 
-      <NotificationDrawer isOpen={showNotifications} onClose={() => setShowNotifications(false)} />
+
 
       {/* Mobile Bottom Navigation (PWA-optimized) */}
       <nav className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[100] md:hidden w-[90%] max-w-sm">
@@ -200,7 +172,7 @@ const CalendarHeader: React.FC<CalendarHeaderProps> = ({
 
             <div className="w-px h-6 bg-border mx-1" />
 
-            {isAdmin ? (
+            {user ? (
                <button 
                 onClick={onAddEvent}
                 className="flex-1 w-11 h-11 bg-primary text-primary-foreground rounded-2xl flex items-center justify-center shadow-lg shadow-primary/30 active:scale-90 transition-all"

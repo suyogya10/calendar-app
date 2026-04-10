@@ -30,16 +30,8 @@ class AnnouncementController extends Controller
 
         $announcement = $request->user()->announcements()->create($validated);
         
-        // Notify all users
+        // Notify all users via email
         \App\Models\User::all()->each(function($user) use ($announcement) {
-            // In-app notification
-            $user->notifications()->create([
-                'title' => 'New Announcement: ' . $announcement->title,
-                'message' => \Illuminate\Support\Str::limit($announcement->content, 100),
-                'type' => 'announcement',
-                'link' => '/announcements'
-            ]);
-
             // Email notification
             try {
                 $user->notify(new \App\Notifications\GeneralNotification(

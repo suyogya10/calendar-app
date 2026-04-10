@@ -14,7 +14,8 @@ import {
   ChevronLeft,
   LogOut,
   Palmtree,
-  Megaphone
+  Megaphone,
+  LayoutGrid
 } from "lucide-react";
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -54,6 +55,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     { label: "Events", href: "/admin/events", icon: CalendarIcon },
     { label: "Users", href: "/admin/users", icon: Users },
     { label: "Announcements", href: "/admin/announcements", icon: Megaphone },
+    { label: "Office Apps", href: "/admin/office-apps", icon: LayoutGrid },
     { label: "Settings", href: "/admin/settings", icon: Settings },
   ];
 
