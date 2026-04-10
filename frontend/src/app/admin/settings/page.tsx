@@ -10,6 +10,7 @@ export default function AdminSettingsPage() {
   const { settings, updateSettings, refreshApiData } = useConfig();
   
   const [holidayDays, setHolidayDays] = useState<number[]>([6]);
+  const [halfDayDays, setHalfDayDays] = useState<number[]>([]);
   const [siteName, setSiteName] = useState("KIOCH Calendar");
   const [logoUrl, setLogoUrl] = useState<string | undefined>(undefined);
   const [workStart, setWorkStart] = useState("09:00");
@@ -29,6 +30,7 @@ export default function AdminSettingsPage() {
       setHalfWorkStart(settings.halfWorkStart);
       setHalfWorkEnd(settings.halfWorkEnd);
       setHolidayDays(settings.holidayDays);
+      setHalfDayDays(settings.halfDayDays || []);
     }
   }, [settings]);
 
@@ -36,6 +38,20 @@ export default function AdminSettingsPage() {
     setHolidayDays((prev) =>
       prev.includes(dayIndex) ? prev.filter((d) => d !== dayIndex) : [...prev, dayIndex]
     );
+    // If it's a holiday, it can't be a half-day
+    if (!holidayDays.includes(dayIndex)) {
+      setHalfDayDays(prev => prev.filter(d => d !== dayIndex));
+    }
+  };
+
+  const toggleHalfDay = (dayIndex: number) => {
+    setHalfDayDays((prev) =>
+      prev.includes(dayIndex) ? prev.filter((d) => d !== dayIndex) : [...prev, dayIndex]
+    );
+    // If it's a half-day, it can't be a full holiday
+    if (!halfDayDays.includes(dayIndex)) {
+      setHolidayDays(prev => prev.filter(d => d !== dayIndex));
+    }
   };
 
   const handleSave = async () => {
@@ -48,7 +64,8 @@ export default function AdminSettingsPage() {
         workEnd,
         halfWorkStart,
         halfWorkEnd,
-        holidayDays
+        holidayDays,
+        halfDayDays
       });
       await refreshApiData();
       setSaved(true);
@@ -169,39 +186,77 @@ export default function AdminSettingsPage() {
         </div>
       </div>
 
-      {/* Holiday Configuration */}
-      <div className="bg-background rounded-2xl border border-border shadow-sm p-6">
-        <div className="flex items-start justify-between gap-4 mb-5">
-          <div>
-            <h2 className="text-base font-black text-foreground">Global Weekend Days</h2>
-            <p className="text-xs font-semibold text-muted-foreground mt-1">
-              Select which days are routine public holidays (like Saturdays in Nepal).
-            </p>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Weekend Configuration */}
+        <div className="bg-background rounded-2xl border border-border shadow-sm p-6">
+          <div className="flex items-start justify-between gap-4 mb-5">
+            <div>
+              <h2 className="text-base font-black text-foreground">Global Weekend Days</h2>
+              <p className="text-xs font-semibold text-muted-foreground mt-1">
+                Select which days are routine public holidays (like Saturdays in Nepal).
+              </p>
+            </div>
+            <div className="flex items-center gap-1.5 text-xs font-bold text-holiday bg-holiday/10 border border-holiday/20 px-3 py-1.5 rounded-lg">
+              <AlertTriangle className="w-3.5 h-3.5" />
+              {holidayDays.length}
+            </div>
           </div>
-          <div className="flex items-center gap-1.5 text-xs font-bold text-holiday bg-holiday/10 border border-holiday/20 px-3 py-1.5 rounded-lg">
-            <AlertTriangle className="w-3.5 h-3.5" />
-            {holidayDays.length} day{holidayDays.length !== 1 ? "s" : ""} selected
+
+          <div className="grid grid-cols-4 sm:grid-cols-7 lg:grid-cols-4 xl:grid-cols-7 gap-2">
+            {DAYS.map((day, index) => {
+              const isSelected = holidayDays.includes(index);
+              return (
+                <button
+                  key={`holiday-${day}`}
+                  onClick={() => toggleDay(index)}
+                  className={`flex flex-col items-center gap-1 py-3 px-2 rounded-xl border font-bold text-[10px] transition-all active:scale-95 ${
+                    isSelected
+                      ? "bg-holiday/10 text-holiday border-holiday/30 shadow-sm"
+                      : "bg-muted/30 text-muted-foreground border-border hover:bg-muted hover:text-foreground"
+                  }`}
+                >
+                  <span className="text-base">{isSelected ? "🔴" : "⬜"}</span>
+                  {day.slice(0, 3)}
+                </button>
+              );
+            })}
           </div>
         </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2">
-          {DAYS.map((day, index) => {
-            const isSelected = holidayDays.includes(index);
-            return (
-              <button
-                key={day}
-                onClick={() => toggleDay(index)}
-                className={`flex flex-col items-center gap-1 py-3 px-2 rounded-xl border font-bold text-xs transition-all active:scale-95 ${
-                  isSelected
-                    ? "bg-holiday/10 text-holiday border-holiday/30 shadow-sm"
-                    : "bg-muted/30 text-muted-foreground border-border hover:bg-muted hover:text-foreground"
-                }`}
-              >
-                <span className="text-lg">{isSelected ? "🔴" : "⬜"}</span>
-                {day.slice(0, 3)}
-              </button>
-            );
-          })}
+        {/* Half-Day Configuration */}
+        <div className="bg-background rounded-2xl border border-border shadow-sm p-6">
+          <div className="flex items-start justify-between gap-4 mb-5">
+            <div>
+              <h2 className="text-base font-black text-foreground">Global Week Half Days</h2>
+              <p className="text-xs font-semibold text-muted-foreground mt-1">
+                Select which days are recurring half-days (colored green in calendar).
+              </p>
+            </div>
+            <div className="flex items-center gap-1.5 text-xs font-bold text-green-600 bg-green-500/10 border border-green-500/20 px-3 py-1.5 rounded-lg">
+              <Clock className="w-3.5 h-3.5" />
+              {halfDayDays.length}
+            </div>
+          </div>
+
+          <div className="grid grid-cols-4 sm:grid-cols-7 lg:grid-cols-4 xl:grid-cols-7 gap-2">
+            {DAYS.map((day, index) => {
+              const isSelected = halfDayDays.includes(index);
+              return (
+                <button
+                  key={`half-${day}`}
+                  onClick={() => toggleHalfDay(index)}
+                  className={`flex flex-col items-center gap-1 py-3 px-2 rounded-xl border font-bold text-[10px] transition-all active:scale-95 ${
+                    isSelected
+                      ? "bg-green-500/10 text-green-600 border-green-500/30 shadow-sm"
+                      : "bg-muted/30 text-muted-foreground border-border hover:bg-muted hover:text-foreground"
+                  }`}
+                >
+                  <span className="text-base">{isSelected ? "🟢" : "⬜"}</span>
+                  {day.slice(0, 3)}
+                </button>
+              );
+            })}
+          </div>
         </div>
       </div>
 

@@ -14,11 +14,17 @@ class HolidayImport implements ToModel, WithHeadingRow
             return null; // Skip invalid rows
         }
 
-        // We use date to avoid duplicates (assuming one holiday per date, or adjust as needed)
+        $type = strtoupper(trim($row['type'] ?? 'FULL'));
+        if (!in_array($type, ['FULL', 'HALF'])) {
+            $type = 'FULL';
+        }
+
+        // We use date to avoid duplicates
         return Holiday::updateOrCreate(
             ['date' => \Carbon\Carbon::parse($row['date'])->format('Y-m-d')],
             [
                 'title' => $row['title'],
+                'type'  => $type,
                 'description' => $row['description'] ?? null
             ]
         );

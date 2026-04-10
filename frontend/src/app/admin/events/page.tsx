@@ -39,11 +39,14 @@ export default function AdminEventsPage() {
   const loadEvents = useCallback(async () => {
     setLoading(true);
     try {
-      const [eventsData, holidaysData] = await Promise.all([
+      const [eventsResponse, holidaysData] = await Promise.all([
         fetchApi("/events"),
         fetchApi("/holidays")
       ]);
-      const normalizedEvents = (Array.isArray(eventsData) ? eventsData : []).map(e => ({ ...e, _type: 'EVENT' as const }));
+
+      // Handle both plain array and {events: [...]} structure
+      const eventsData = Array.isArray(eventsResponse) ? eventsResponse : (eventsResponse?.events || []);
+      const normalizedEvents = eventsData.map((e: any) => ({ ...e, _type: 'EVENT' as const }));
       const normalizedHolidays = (Array.isArray(holidaysData) ? holidaysData : []).map(h => ({ ...h, _type: 'HOLIDAY' as const }));
       
       const combined = [...normalizedEvents, ...normalizedHolidays].sort((a, b) => {

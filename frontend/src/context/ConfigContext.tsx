@@ -23,6 +23,7 @@ export interface ApiEvent {
   is_public: boolean;
   bs_start_time?: string;
   bs_start_time_nepali?: string;
+  department?: string | null;
 }
 
 export interface ApiHoliday {
@@ -43,6 +44,7 @@ export interface Settings {
   halfWorkStart: string;
   halfWorkEnd: string;
   holidayDays: number[];
+  halfDayDays: number[];
 }
 
 interface ConfigContextType {
@@ -63,6 +65,7 @@ export const defaultSettings: Settings = {
   halfWorkStart: "09:00",
   halfWorkEnd: "13:00",
   holidayDays: [6], // Saturday
+  halfDayDays: [],
 };
 
 const ConfigContext = createContext<ConfigContextType | undefined>(undefined);
@@ -101,6 +104,7 @@ export function ConfigProvider({ children }: { children: React.ReactNode }) {
         if (settingsData.halfWorkStart) pd.halfWorkStart = settingsData.halfWorkStart;
         if (settingsData.halfWorkEnd) pd.halfWorkEnd = settingsData.halfWorkEnd;
         if (settingsData.holidayDays) pd.holidayDays = JSON.parse(settingsData.holidayDays);
+        if (settingsData.halfDayDays) pd.halfDayDays = JSON.parse(settingsData.halfDayDays);
         setSettings(pd);
       }
     } catch (e) {
@@ -137,6 +141,7 @@ export function ConfigProvider({ children }: { children: React.ReactNode }) {
     // Convert array back to string payload for backend
     const payload: any = { ...merged };
     payload.holidayDays = JSON.stringify(merged.holidayDays);
+    payload.halfDayDays = JSON.stringify(merged.halfDayDays);
     
     try {
       await fetchApi("/settings", { method: "POST", body: JSON.stringify(payload) });
@@ -167,6 +172,10 @@ export function ConfigProvider({ children }: { children: React.ReactNode }) {
     const dayIndex = getDay(date);
     if (settings.holidayDays.includes(dayIndex)) {
       return { type: "FULL" as HolidayType };
+    }
+
+    if (settings.halfDayDays.includes(dayIndex)) {
+      return { type: "HALF" as HolidayType, config: halfDayConfig };
     }
     
     return { type: "WORK" as HolidayType };

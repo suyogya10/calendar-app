@@ -58,18 +58,19 @@ const MonthView: React.FC<MonthViewProps> = ({ currentDate, onDateClick }) => {
   });
 
   const weekDays = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+  const isSixWeeks = days.length > 35;
 
   return (
-    <div className="flex flex-col h-full p-2 md:p-6 lg:p-8 animate-in fade-in duration-500 overflow-hidden bg-background">
-      <div className="grid grid-cols-7 mb-2 md:mb-4 border-b border-border pb-2 shrink-0">
+    <div className={`flex flex-col h-full ${isSixWeeks ? 'p-1 md:p-3 lg:p-6' : 'p-2 md:p-6 lg:p-8'} animate-in fade-in duration-500 overflow-hidden bg-background`}>
+      <div className={`grid grid-cols-7 ${isSixWeeks ? 'mb-1 md:mb-2' : 'mb-2 md:mb-4'} border-b border-border pb-2 shrink-0`}>
         {weekDays.map((day, idx) => {
           const isHeaderHoliday = settings.holidayDays.includes(idx);
-          const isHeaderHalf = false; // Systemic half holidays discarded in favor of explicit DB holidays
+          const isHeaderHalf = settings.halfDayDays?.includes(idx);
           return (
             <div
               key={day}
               className={`text-center text-[10px] md:text-xs font-bold uppercase tracking-widest ${
-                isHeaderHoliday ? "text-holiday" : "text-muted-foreground"
+                isHeaderHoliday ? "text-holiday" : isHeaderHalf ? "text-green-600" : "text-muted-foreground"
               }`}
             >
               <span className="hidden md:inline">{day}</span>
@@ -79,7 +80,10 @@ const MonthView: React.FC<MonthViewProps> = ({ currentDate, onDateClick }) => {
         })}
       </div>
 
-      <div className="flex-1 grid grid-cols-7 auto-rows-fr gap-1 md:gap-2 lg:gap-4 overflow-y-auto custom-scrollbar pb-20 md:pb-0">
+      <div 
+        className={`flex-1 grid grid-cols-7 ${isSixWeeks ? 'gap-1 md:gap-1.5 lg:gap-2' : 'gap-1.5 md:gap-3 lg:gap-4'} overflow-y-auto custom-scrollbar pb-20 md:pb-0`}
+        style={{ gridAutoRows: 'minmax(min-content, 1fr)' }}
+      >
         {days.map((day) => {
           let isCurrentMonth = false;
           let primaryDateText = "";
@@ -96,6 +100,10 @@ const MonthView: React.FC<MonthViewProps> = ({ currentDate, onDateClick }) => {
             secondaryDateText = new NepaliDate(day).format("D");
           }
 
+          if (!isCurrentMonth) {
+             return <div key={day.toString()} className="ring-1 ring-inset ring-border/10 rounded-xl md:rounded-2xl opacity-20" />;
+          }
+
           const isTodayDate = isToday(day);
           const status = getHolidayStatus(day);
           const isFullHoliday = status.type === "FULL";
@@ -109,45 +117,41 @@ const MonthView: React.FC<MonthViewProps> = ({ currentDate, onDateClick }) => {
                   onDateClick(day);
                 }
               }}
-              className={`relative rounded-xl md:rounded-2xl p-1 md:p-2 h-full min-h-[60px] md:min-h-[100px] flex flex-col group transition-all ring-1 ring-inset ${
-                isCurrentMonth
-                  ? isFullHoliday
-                    ? "bg-holiday-bg ring-holiday/20 hover:ring-holiday/50"
-                    : isHalfHoliday
-                      ? `bg-opacity-10 ring-opacity-20 hover:ring-opacity-50` 
-                      : "bg-background ring-border hover:ring-primary/50"
-                  : "bg-muted/50 ring-transparent text-muted-foreground/50"
+              className={`relative rounded-xl md:rounded-2xl ${isSixWeeks ? 'p-0.5 md:p-1 lg:p-1.5' : 'p-1 md:p-2'} h-full flex flex-col group transition-all ring-1 ring-inset ${
+                isFullHoliday
+                  ? "bg-holiday-bg ring-holiday/20 hover:ring-holiday/50"
+                  : isHalfHoliday
+                    ? `bg-green-500/5 ring-green-500/20 hover:ring-green-500/40` 
+                    : "bg-background ring-border hover:ring-primary/50"
               } cursor-pointer`}
-              style={isCurrentMonth && isHalfHoliday ? { 
+              style={isHalfHoliday ? { 
                 backgroundColor: `${status.config?.color}11`,
                 boxShadow: `inset 0 0 0 1px ${status.config?.color}33`
               } : {}}
             >
-              <div className="flex justify-between items-start mb-1 md:mb-2">
+              <div className="flex flex-col md:flex-row justify-between items-start gap-1 mb-1 md:mb-2">
                 <span
-                  className={`flex h-6 w-6 md:h-8 md:w-8 items-center justify-center rounded-full md:rounded-xl text-xs md:text-sm font-bold transition-all ${
+                  className={`flex h-6 w-6 md:h-8 md:w-8 items-center justify-center rounded-full md:rounded-xl text-[10px] md:text-sm font-bold transition-all shrink-0 ${
                     isTodayDate
                       ? "bg-primary text-primary-foreground shadow-lg shadow-primary/40 md:scale-110"
-                      : isCurrentMonth
-                      ? isFullHoliday ? "text-holiday" : "text-foreground"
-                      : "text-muted-foreground"
+                      : isFullHoliday ? "text-holiday" : "text-foreground"
                   }`}
-                  style={isCurrentMonth && isHalfHoliday && !isTodayDate ? { color: status.config?.color } : {}}
+                  style={isHalfHoliday && !isTodayDate ? { color: status.config?.color } : {}}
                 >
                   {primaryDateText}
                 </span>
                 
-                <span className={`text-[9px] md:text-[11px] font-black opacity-40 mt-1 md:mt-2 pr-1 ${isCurrentMonth ? (isFullHoliday ? 'text-holiday' : 'text-foreground') : 'text-muted-foreground'}`}>
+                <span className={`text-[8px] md:text-[11px] font-black opacity-40 pr-1 truncate ${isFullHoliday ? 'text-holiday' : 'text-foreground'}`}>
                    {secondaryDateText}
                 </span>
               </div>
               
-              <div className="flex-1 flex flex-col gap-1 items-center md:items-stretch overflow-hidden overflow-y-auto custom-scrollbar relative z-10">
+              <div className="flex-1 flex flex-col gap-1 items-stretch overflow-hidden relative z-10">
                 {/* Specific DB Holidays */}
                 {apiHolidays
                   .filter(h => h.date === format(day, "yyyy-MM-dd"))
                   .map(holiday => (
-                    <div key={`h-${holiday.id}`} className="hidden md:block px-2 py-0.5 bg-holiday/10 text-[10px] font-bold text-holiday rounded border border-holiday/20 truncate w-full">
+                    <div key={`h-${holiday.id}`} className={`hidden md:block px-2 py-0.5 bg-holiday/10 ${isSixWeeks ? 'text-[8px]' : 'text-[9px]'} font-black text-holiday rounded border border-holiday/20 truncate w-full uppercase`}>
                       {holiday.title}
                     </div>
                   ))
@@ -159,8 +163,8 @@ const MonthView: React.FC<MonthViewProps> = ({ currentDate, onDateClick }) => {
                   .map(event => (
                     <React.Fragment key={event.id}>
                       <div className="md:hidden w-1.5 h-1.5 rounded-full bg-primary mt-0.5" title={event.title}></div>
-                      <div className="hidden md:block px-2 py-1 bg-primary/10 text-[10px] font-bold text-primary rounded-lg border border-primary/20 truncate w-full" title={event.title}>
-                        {event.is_all_day ? `All Day: ${event.title}` : event.title}
+                      <div className={`hidden md:block px-2 py-0.5 bg-primary/10 ${isSixWeeks ? 'text-[8px]' : 'text-[9px]'} font-black text-primary rounded border border-primary/20 truncate w-full uppercase`} title={event.title}>
+                        {event.title}
                       </div>
                     </React.Fragment>
                   ))

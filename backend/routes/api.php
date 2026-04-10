@@ -10,6 +10,10 @@ use App\Http\Controllers\Api\SettingController;
 use App\Http\Controllers\Api\UserController;
 use App\Http\Controllers\Api\AnnouncementController;
 use App\Http\Controllers\Api\OfficeAppController;
+use App\Http\Controllers\Api\AdminController;
+use App\Http\Controllers\Api\StaffHolidayController;
+
+Route::get('/staff-holidays', [StaffHolidayController::class, 'index']);
 
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
@@ -26,9 +30,11 @@ Route::middleware('auth:sanctum')->group(function () {
     });
     
     Route::post('/logout', [AuthController::class, 'logout']);
+    Route::post('/staff-holidays', [StaffHolidayController::class, 'store']);
 
     // Admin Only Routes
     Route::middleware([\App\Http\Middleware\IsAdmin::class])->group(function () {
+        Route::get('admin/dashboard', [AdminController::class, 'dashboard']);
         Route::post('holidays/import-excel', [HolidayController::class, 'importExcel']);
         Route::get('holidays/export-excel', [HolidayController::class, 'exportExcel']);
         Route::post('holidays/fetch-api', [HolidayController::class, 'fetchExternalAPI']);

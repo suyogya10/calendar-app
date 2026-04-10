@@ -25,6 +25,10 @@ class UserController extends Controller
             });
         }
 
+        if ($request->boolean('all')) {
+            return response()->json($query->orderBy('name', 'asc')->get());
+        }
+
         return response()->json($query->orderBy('created_at', 'desc')->paginate(15));
     }
 

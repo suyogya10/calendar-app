@@ -22,13 +22,18 @@ import {
   UserCircle,
   LogOut,
   ChevronRight,
-  Plus
+  Plus,
+  Palmtree,
+  CalendarDays,
+  CheckCircle2,
+  CalendarPlus
 } from "lucide-react";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { format } from "date-fns";
 import { fetchApi } from "@/lib/api";
 import AnnouncementModal from "@/components/AnnouncementModal";
+import StaffLeaveModal from "@/components/StaffLeaveModal";
 
 export default function Dashboard() {
   const { settings } = useConfig();
@@ -38,6 +43,7 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [selectedAnnouncement, setSelectedAnnouncement] = useState<any | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isStaffLeaveModalOpen, setIsStaffLeaveModalOpen] = useState(false);
   const [weather, setWeather] = useState<any>(null);
   const [loadingWeather, setLoadingWeather] = useState(true);
   const [officeApps, setOfficeApps] = useState<any[]>([]);
@@ -75,6 +81,7 @@ export default function Dashboard() {
     };
     loadApps();
   }, []);
+  
 
   // Fetch weather for Kathmandu
   useEffect(() => {
@@ -182,7 +189,7 @@ export default function Dashboard() {
             </div>
 
             {/* Main Action Grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
               {/* Calendar Quick Access */}
               <Link href="/calendar">
                 <div className="group h-full bg-card border border-border rounded-[2rem] p-6 hover:shadow-2xl hover:shadow-primary/5 hover:border-primary/50 transition-all duration-300">
@@ -195,9 +202,26 @@ export default function Dashboard() {
                     </div>
                   </div>
                   <h3 className="text-xl font-black text-foreground mb-1">Office Calendar</h3>
-                  <p className="text-sm font-medium text-muted-foreground">View schedules, holidays, and upcoming office events.</p>
+                  <p className="text-sm font-medium text-muted-foreground">View schedules, holidays, and upcoming events.</p>
                 </div>
               </Link>
+
+              {/* Staff on Leave Card */}
+              <div 
+                onClick={() => setIsStaffLeaveModalOpen(true)}
+                className="group h-full bg-card border border-border rounded-[2rem] p-6 hover:shadow-2xl hover:shadow-indigo-500/5 hover:border-indigo-500/50 transition-all duration-300 cursor-pointer text-left"
+              >
+                <div className="flex items-center justify-between mb-4">
+                  <div className="w-12 h-12 bg-indigo-500/10 text-indigo-500 rounded-2xl flex items-center justify-center group-hover:bg-indigo-500 group-hover:text-white transition-all">
+                    <Palmtree className="w-6 h-6" />
+                  </div>
+                  <div className="p-2 rounded-xl bg-muted group-hover:bg-indigo-500/10 transition-colors">
+                    <ChevronRight className="w-4 h-4" />
+                  </div>
+                </div>
+                <h3 className="text-xl font-black text-foreground mb-1">Staff on Leave</h3>
+                <p className="text-sm font-medium text-muted-foreground">Check daily leave status or notify your own absence.</p>
+              </div>
 
             {/* Admin Panel (Conditional) */}
             {role === "ADMIN" && (
@@ -348,6 +372,11 @@ export default function Dashboard() {
           </motion.div>
         </motion.div>
       </main>
+
+      <StaffLeaveModal 
+        isOpen={isStaffLeaveModalOpen}
+        onClose={() => setIsStaffLeaveModalOpen(false)}
+      />
 
       <AnnouncementModal 
         isOpen={isModalOpen}
