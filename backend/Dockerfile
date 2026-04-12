@@ -11,6 +11,9 @@ COPY composer.json composer.lock ./
 # Install dependencies (ignoring scripts for now)
 RUN composer install --no-interaction --no-dev --no-scripts --no-autoloader
 
+# Copy Nginx static CORS configuration
+COPY cors-static.conf /opt/docker/etc/nginx/vhost.common.d/cors-static.conf
+
 # Copy the rest of the application
 COPY . /app
 
