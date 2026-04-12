@@ -1,75 +1,58 @@
-version: '3.8'
+version: "3.9"
 
 services:
-  # Database Service
-  db:
-    image: mysql:8.0
-    container_name: dashboard-db
-    restart: unless-stopped
-    environment:
-      - MYSQL_DATABASE=dashboard_app
-      - MYSQL_ROOT_PASSWORD=Hamilton#44
-      - MYSQL_PASSWORD=Hamilton#44
-    volumes:
-      - db_data:/var/lib/mysql
-    networks:
-      - calendar-network
-
-  # Backend Service (Laravel PHP-FPM)
+  # Backend: Laravel Application using PHP-Nginx combined image
   backend:
-    build:
-      context: ./backend
-      dockerfile: Dockerfile
-    container_name: dashboard-backend
+    image: webdevops/php-nginx:8.4
+    container_name: kioch-dashboard-backend
     restart: unless-stopped
+    ports:
+      - "${BACKEND_PORT:-8090}:80"
+    volumes:
+      - ./backend:/app
     environment:
+      # PHP/Nginx Config
+      - WEB_DOCUMENT_ROOT=/app/public
+      - PHP_DATE_TIMEZONE=Asia/Kathmandu
+      
+      # Laravel Environment
       - APP_ENV=production
       - APP_DEBUG=false
+      - APP_KEY=${APP_KEY}
+      
+      # Database Connection (Connecting to shared-mysql)
       - DB_CONNECTION=mysql
-      - DB_HOST=db
+      - DB_HOST=shared-mysql
       - DB_PORT=3306
-      - DB_DATABASE=dashboard_app
-      - DB_USERNAME=root
-      - DB_PASSWORD=Hamilton#44
-    volumes:
-      - ./backend:/var/www
+      - DB_DATABASE=${DB_DATABASE:-calendar_app}
+      - DB_USERNAME=${DB_USERNAME:-root}
+      - DB_PASSWORD=${DB_PASSWORD:-Hamilton#44}
+    deploy:
+      resources:
+        limits:
+          memory: 512M
     networks:
-      - calendar-network
-    depends_on:
-      - db
+      - shared-net
 
-  # Nginx Service (Web Server for Backend)
-  nginx:
-    image: nginx:alpine
-    container_name: dashboard-nginx
-    restart: unless-stopped
-    volumes:
-      - ./backend:/var/www
-      - ./backend/nginx.conf:/etc/nginx/conf.d/default.conf
-    networks:
-      - calendar-network
-    depends_on:
-      - backend
-
-  # Frontend Service (Next.js)
+  # Frontend: Next.js Application (Built from Dockerfile for production)
   frontend:
     build:
       context: ./frontend
       dockerfile: Dockerfile
-    container_name: dashboard-frontend
+    container_name: kioch-dashboard-frontend
     restart: unless-stopped
     ports:
-      - "3000:3000"
+      - "${FRONTEND_PORT:-8091}:3000"
     environment:
-      - NEXT_PUBLIC_API_URL=https://dashboard.kioch.org.np/api
+      - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-https://dashboard.kioch.org/api}
+      - NODE_ENV=production
+    deploy:
+      resources:
+        limits:
+          memory: 2048M  
     networks:
-      - calendar-network
-    depends_on:
-      - backend
+      - shared-net
 
 networks:
-  calendar-network:
-    driver: bridge
-
-volumes:
-  db_data:
+  shared-net:
+    external: true
