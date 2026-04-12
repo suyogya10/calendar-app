@@ -31,7 +31,7 @@ import {
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { format } from "date-fns";
-import { fetchApi } from "@/lib/api";
+import { fetchApi, BACKEND_URL } from "@/lib/api";
 import AnnouncementModal from "@/components/AnnouncementModal";
 import StaffLeaveModal from "@/components/StaffLeaveModal";
 
@@ -257,7 +257,7 @@ export default function Dashboard() {
                     <div className={`w-12 h-12 rounded-xl border border-border overflow-hidden flex items-center justify-center shrink-0 group-hover:shadow-lg transition-all ${!app.icon_url ? getAppColor(app.title) : 'bg-muted'}`}>
                        {app.icon_url ? (
                           <img 
-                            src={app.icon_url.startsWith('http') ? app.icon_url : `http://127.0.0.1:8000${app.icon_url}`} 
+                            src={app.icon_url.startsWith('http') ? app.icon_url : `${BACKEND_URL}${app.icon_url}`} 
                             alt={app.title} 
                             className="w-full h-full object-cover" 
                           />

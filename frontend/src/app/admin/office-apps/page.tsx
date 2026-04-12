@@ -14,7 +14,7 @@ import {
   Image as ImageIcon
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import { fetchApi } from "@/lib/api";
+import { fetchApi, BACKEND_URL } from "@/lib/api";
 import { useToast } from "@/context/ToastContext";
 
 interface OfficeApp {
@@ -83,7 +83,7 @@ export default function AdminOfficeAppsPage() {
     setUrl(app.url);
     setSortOrder(app.sort_order);
     setIconFile(null);
-    setIconPreview(app.icon_url ? (app.icon_url.startsWith('http') ? app.icon_url : `http://127.0.0.1:8000${app.icon_url}`) : null);
+    setIconPreview(app.icon_url ? (app.icon_url.startsWith('http') ? app.icon_url : `${BACKEND_URL}${app.icon_url}`) : null);
     setIsModalOpen(true);
   };
 
@@ -212,7 +212,7 @@ export default function AdminOfficeAppsPage() {
                         <div className={`w-10 h-10 rounded-xl border border-border overflow-hidden flex items-center justify-center shrink-0 ${!app.icon_url ? getAppColor(app.title) : 'bg-muted'}`}>
                            {app.icon_url ? (
                               <img 
-                                src={app.icon_url.startsWith('http') ? app.icon_url : `http://127.0.0.1:8000${app.icon_url}`} 
+                                src={app.icon_url.startsWith('http') ? app.icon_url : `${BACKEND_URL}${app.icon_url}`} 
                                 alt={app.title} 
                                 className="w-full h-full object-cover" 
                               />
