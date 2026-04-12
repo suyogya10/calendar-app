@@ -1,44 +1,21 @@
-# Backend Dockerfile
-FROM php:8.3-fpm
+FROM webdevops/php-nginx:8.4
 
-# Install system dependencies
-RUN apt-get update && apt-get install -y \
-    git \
-    curl \
-    libpng-dev \
-    libonig-dev \
-    libxml2-dev \
-    zip \
-    unzip \
-    libzip-dev \
-    libicu-dev
+ENV WEB_DOCUMENT_ROOT=/app/public
+ENV PHP_DATE_TIMEZONE=Asia/Kathmandu
 
-# Clear cache
-RUN apt-get clean && rm -rf /var/lib/apt/lists/*
+WORKDIR /app
 
-# Install PHP extensions
-RUN docker-php-ext-install pdo_mysql mbstring exif pcntl bcmath gd zip intl
-
-# Get latest Composer
-COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
-
-# Set working directory
-WORKDIR /var/www
-
-# Copy composer files first for better caching and to avoid script issues
+# Copy composer files first for better caching
 COPY composer.json composer.lock ./
 
-# Install dependencies without scripts (prevents artisan discover failure)
+# Install dependencies (ignoring scripts for now)
 RUN composer install --no-interaction --no-dev --no-scripts --no-autoloader
 
 # Copy the rest of the application
-COPY . /var/www
+COPY . /app
 
-# Now generate the autoloader and run scripts if needed
+# Now generate the autoloader and run clear/optimizations if needed
 RUN composer dump-autoload --optimize
 
-# Set permissions
-RUN chown -R www-data:www-data /var/www/storage /var/www/bootstrap/cache
-
-EXPOSE 9000
-CMD ["php-fpm"]
+# Ensure the 'application' user (used by webdevops images) has correct permissions
+RUN chown -R application:application /app/storage /app/bootstrap/cache

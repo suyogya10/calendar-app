@@ -3,13 +3,13 @@ version: "3.9"
 services:
   # Backend: Laravel Application using PHP-Nginx combined image
   backend:
-    image: webdevops/php-nginx:8.4
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
     container_name: kioch-dashboard-backend
     restart: unless-stopped
     ports:
       - "${BACKEND_PORT:-8090}:80"
-    volumes:
-      - ./backend:/app
     environment:
       # PHP/Nginx Config
       - WEB_DOCUMENT_ROOT=/app/public
