@@ -47,9 +47,11 @@ export default function Dashboard() {
   const [weather, setWeather] = useState<any>(null);
   const [loadingWeather, setLoadingWeather] = useState(true);
   const [officeApps, setOfficeApps] = useState<any[]>([]);
+  const [mounted, setMounted] = useState(false);
 
   // Update clock every minute
   useEffect(() => {
+    setMounted(true);
     const timer = setInterval(() => setTime(new Date()), 1000);
     return () => clearInterval(timer);
   }, []);
@@ -173,12 +175,12 @@ export default function Dashboard() {
                   <div className="flex items-center gap-3 mb-1">
                     <Clock className="w-6 h-6 opacity-80" />
                     <span className="text-3xl md:text-4xl font-black tabular-nums">
-                      {format(time, "hh:mm")}
-                      <span className="text-lg opacity-60 ml-1">{format(time, "a")}</span>
+                      {mounted ? format(time, "hh:mm") : "--:--"}
+                      <span className="text-lg opacity-60 ml-1">{mounted ? format(time, "a") : ""}</span>
                     </span>
                   </div>
                   <p className="text-sm font-black uppercase tracking-widest opacity-80">
-                    {format(time, "EEEE, MMMM do")}
+                    {mounted ? format(time, "EEEE, MMMM do") : "Loading date..."}
                   </p>
                 </div>
               </div>
