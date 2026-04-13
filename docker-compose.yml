@@ -36,6 +36,8 @@ services:
           memory: 512M
     networks:
       - shared-net
+    volumes:
+      - backend-storage:/app/storage
 
   # Frontend: Next.js Application (Built from Dockerfile for production)
   frontend:
@@ -61,3 +63,6 @@ services:
 networks:
   shared-net:
     external: true
+
+volumes:
+  backend-storage:
