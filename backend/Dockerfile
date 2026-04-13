@@ -20,6 +20,9 @@ COPY . /app
 # Now generate the autoloader and run clear/optimizations if needed
 RUN composer dump-autoload --optimize
 
+# Run database migrations
+RUN php artisan migrate --force
+
 # Create storage symlink so public/storage points to storage/app/public
 RUN php artisan storage:link
 

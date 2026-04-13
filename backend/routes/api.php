@@ -12,6 +12,7 @@ use App\Http\Controllers\Api\AnnouncementController;
 use App\Http\Controllers\Api\OfficeAppController;
 use App\Http\Controllers\Api\AdminController;
 use App\Http\Controllers\Api\StaffHolidayController;
+use App\Http\Controllers\Api\ProfileController;
 
 Route::get('/staff-holidays', [StaffHolidayController::class, 'index']);
 
@@ -31,6 +32,12 @@ Route::middleware('auth:sanctum')->group(function () {
     
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::post('/staff-holidays', [StaffHolidayController::class, 'store']);
+
+    // User Profile Routes
+    Route::get('/profile', [ProfileController::class, 'index']);
+    Route::post('/profile', [ProfileController::class, 'update']);
+    Route::delete('/profile/avatar', [ProfileController::class, 'deleteAvatar']);
+    Route::put('/profile/password', [ProfileController::class, 'updatePassword']);
 
     // Admin Only Routes
     Route::middleware([\App\Http\Middleware\IsAdmin::class])->group(function () {

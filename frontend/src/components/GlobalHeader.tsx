@@ -60,11 +60,23 @@ export function GlobalHeader() {
             </button>
           ) : (
             <div className="flex items-center gap-2">
-              <div className="hidden sm:flex flex-col items-end mr-2">
+              <Link href="/profile" className="hidden sm:flex flex-col items-end mr-2 hover:opacity-80 transition-opacity">
                 <span className="text-[10px] font-black leading-none mb-0.5">{user?.name}</span>
                 {role === "ADMIN" && <span className="text-[8px] font-black text-amber-500 uppercase tracking-tighter">Administrator</span>}
-              </div>
+              </Link>
               
+              <Link 
+                href="/profile"
+                className={`p-2 rounded-xl transition-all border border-border ${pathname === '/profile' ? 'bg-primary text-primary-foreground border-primary' : 'bg-muted hover:bg-primary/10 hover:text-primary'}`}
+                title="My Profile"
+              >
+                {user?.avatar_url ? (
+                  <img src={user.avatar_url.startsWith('http') ? user.avatar_url : `${BACKEND_URL}${user.avatar_url}`} alt="" className="w-5 h-5 rounded-md object-cover" />
+                ) : (
+                  <UserCircle className="w-5 h-5" />
+                )}
+              </Link>
+
               {role === "ADMIN" && pathname !== "/admin" && (
                 <button 
                   onClick={() => router.push("/admin")}
