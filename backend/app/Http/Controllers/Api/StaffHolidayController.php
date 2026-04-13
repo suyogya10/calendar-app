@@ -49,4 +49,14 @@ class StaffHolidayController extends Controller
             'holiday' => $holiday->load('user:id,name')
         ]);
     }
+
+    public function destroy(Request $request, StaffHoliday $staffHoliday)
+    {
+        if ($staffHoliday->user_id !== $request->user()->id && !$request->user()->is_admin) {
+            abort(403, 'Unauthorized action.');
+        }
+
+        $staffHoliday->delete();
+        return response()->json(null, 204);
+    }
 }

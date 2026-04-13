@@ -3,9 +3,11 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Event extends Model
 {
+    use SoftDeletes;
     protected $fillable = ['user_id', 'title', 'description', 'is_public', 'department', 'start_time', 'end_time', 'is_all_day'];
 
     protected $appends = ['bs_start_time', 'bs_end_time', 'bs_start_time_nepali', 'bs_end_time_nepali'];

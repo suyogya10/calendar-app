@@ -9,7 +9,8 @@ import {
   ChevronRight,
   CalendarPlus,
   CheckCircle2,
-  Users
+  Users,
+  Trash2
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { format, addDays, subDays } from "date-fns";
@@ -83,6 +84,17 @@ export default function StaffLeaveModal({ isOpen, onClose }: StaffLeaveModalProp
       alert(e.message || "Failed to notify leave");
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const handleDeleteLeave = async (id: number) => {
+    if (!confirm("Are you sure you want to delete this leave notification? This will be logged.")) return;
+    try {
+      await fetchApi(`/staff-holidays/${id}`, { method: "DELETE" });
+      const data = await fetchApi(`/staff-holidays?date=${leaveDate}`);
+      setStaffLeave(data || []);
+    } catch (e: any) {
+      alert(e.message || "Failed to delete leave notification");
     }
   };
 
@@ -173,6 +185,15 @@ export default function StaffLeaveModal({ isOpen, onClose }: StaffLeaveModalProp
                           <h4 className="text-sm font-black text-foreground">{sh.user.name}</h4>
                           <p className="text-[10px] font-bold text-muted-foreground uppercase">{sh.user.department || "General"}</p>
                         </div>
+                        {(user?.is_admin || sh.user_id === user?.id) && (
+                          <button 
+                            onClick={() => handleDeleteLeave(sh.id)}
+                            className="p-2 bg-red-500/5 hover:bg-red-500/10 text-red-500 rounded-xl transition-all active:scale-90"
+                            title="Delete Leave Notification"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        )}
                       </div>
                     ))
                   ) : (

@@ -2,17 +2,20 @@
 
 import React from "react";
 import { format } from "date-fns";
-import { X, Clock, Plus, Flag, CalendarDays, AlignLeft } from "lucide-react";
+import { X, Clock, Plus, Flag, CalendarDays, AlignLeft, Pencil, Trash2 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useConfig } from "@/context/ConfigContext";
 import { useAuth } from "@/context/AuthContext";
 import NepaliDate from "nepali-datetime";
+import { fetchApi } from "@/lib/api";
+import { ApiEvent, ApiHoliday } from "@/context/ConfigContext";
 
 interface DayDetailsModalProps {
   isOpen: boolean;
   onClose: () => void;
   selectedDate: Date | null;
   onAddEvent: (date: Date) => void;
+  onEditEvent: (date: Date, event: ApiEvent | ApiHoliday) => void;
 }
 
 // Helper to parse local API time Strings safely
@@ -25,11 +28,21 @@ function parseLocal(dtStr: string | null | undefined): Date | null {
   return new Date(year, month - 1, day, hour, minute, second);
 }
 
-export function DayDetailsModal({ isOpen, onClose, selectedDate, onAddEvent }: DayDetailsModalProps) {
-  const { apiEvents, apiHolidays } = useConfig();
+export function DayDetailsModal({ isOpen, onClose, selectedDate, onAddEvent, onEditEvent }: DayDetailsModalProps) {
+  const { apiEvents, apiHolidays, refreshApiData } = useConfig();
   const { role, user } = useAuth();
   const isAdmin = role === "ADMIN";
   const isPublic = role === "PUBLIC";
+
+  const handleDeleteEvent = async (id: number) => {
+    if (!confirm("Are you sure you want to delete this event? This action will be logged.")) return;
+    try {
+      await fetchApi(`/events/${id}`, { method: "DELETE" });
+      await refreshApiData();
+    } catch (e: any) {
+      alert(e.message || "Failed to delete event.");
+    }
+  };
 
   if (!selectedDate) return null;
 
@@ -118,16 +131,43 @@ export function DayDetailsModal({ isOpen, onClose, selectedDate, onAddEvent }: D
                 return (
                   <div key={e.id} className="flex flex-col p-4 rounded-2xl border border-border bg-background shadow-sm">
                     <div className="flex justify-between items-start gap-4">
-                      <h3 className="font-bold text-lg text-foreground leading-tight">{e.title}</h3>
-                      {e.is_all_day ? (
-                        <span className="shrink-0 px-2 py-1 bg-primary/10 text-primary text-[10px] font-black uppercase rounded-md border border-primary/20">All Day</span>
-                      ) : (
-                        start && (
-                          <div className="shrink-0 flex items-center gap-1.5 text-xs font-bold text-muted-foreground bg-muted px-2 py-1 rounded-md">
-                            <Clock className="w-3 h-3" />
-                            {format(start, "h:mm a")} {end && `- ${format(end, "h:mm a")}`}
-                          </div>
-                        )
+                      <div className="flex-1">
+                        <h3 className="font-bold text-lg text-foreground leading-tight">{e.title}</h3>
+                        <div className="flex items-center gap-2 mt-1">
+                          {e.is_all_day ? (
+                            <span className="px-2 py-0.5 bg-primary/10 text-primary text-[10px] font-black uppercase rounded-md border border-primary/20">All Day</span>
+                          ) : (
+                            start && (
+                              <div className="flex items-center gap-1.5 text-[10px] font-bold text-muted-foreground bg-muted px-1.5 py-0.5 rounded-md">
+                                <Clock className="w-3 h-3" />
+                                {format(start, "h:mm a")} {end && `- ${format(end, "h:mm a")}`}
+                              </div>
+                            )
+                          )}
+                          {(e as any).user && (
+                            <span className="text-[10px] font-bold text-muted-foreground/60 uppercase">By {(e as any).user.name}</span>
+                          )}
+                        </div>
+                      </div>
+                      
+                      {/* Action Buttons */}
+                      {!isPublic && (user?.id === (e as any).user_id || isAdmin) && (
+                        <div className="flex items-center gap-1 shrink-0">
+                          <button 
+                            onClick={() => onEditEvent(selectedDate, e)}
+                            className="p-1.5 bg-primary/5 hover:bg-primary/10 text-primary rounded-lg transition-colors active:scale-90"
+                            title="Edit Event"
+                          >
+                            <Pencil className="w-4 h-4" />
+                          </button>
+                          <button 
+                            onClick={() => handleDeleteEvent(e.id)}
+                            className="p-1.5 bg-red-500/5 hover:bg-red-500/10 text-red-500 rounded-lg transition-colors active:scale-90"
+                            title="Delete Event"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
                       )}
                     </div>
                     {e.description && (

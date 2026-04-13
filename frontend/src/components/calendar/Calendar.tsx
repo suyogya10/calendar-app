@@ -10,6 +10,7 @@ import WeekView from "./WeekView";
 import DayView from "./DayView";
 import { EventModal } from "./EventModal";
 import { DayDetailsModal } from "./DayDetailsModal";
+import { ApiEvent, ApiHoliday } from "@/context/ConfigContext";
 
 type ViewType = "month" | "week" | "day";
 
@@ -21,15 +22,17 @@ const Calendar: React.FC = () => {
   const [isDayDetailsOpen, setIsDayDetailsOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [selectedTime, setSelectedTime] = useState<string | undefined>();
+  const [selectedEvent, setSelectedEvent] = useState<ApiEvent | ApiHoliday | null>(null);
 
   const openDayDetails = (date: Date) => {
     setSelectedDate(date);
     setIsDayDetailsOpen(true);
   };
 
-  const openEventModal = (date: Date, time?: string) => {
+  const openEventModal = (date: Date, time?: string, event?: ApiEvent | ApiHoliday) => {
     setSelectedDate(date);
     setSelectedTime(time);
+    setSelectedEvent(event || null);
     setIsDayDetailsOpen(false);
     setIsEventModalOpen(true);
   };
@@ -118,9 +121,13 @@ const Calendar: React.FC = () => {
       
       <EventModal 
         isOpen={isEventModalOpen} 
-        onClose={() => setIsEventModalOpen(false)} 
+        onClose={() => {
+          setIsEventModalOpen(false);
+          setSelectedEvent(null);
+        }} 
         selectedDate={selectedDate}
         initialTime={selectedTime}
+        eventToEdit={selectedEvent}
       />
 
       <DayDetailsModal
@@ -128,6 +135,7 @@ const Calendar: React.FC = () => {
         onClose={() => setIsDayDetailsOpen(false)}
         selectedDate={selectedDate}
         onAddEvent={(d) => openEventModal(d)}
+        onEditEvent={(d, e) => openEventModal(d, undefined, e)}
       />
     </div>
   );

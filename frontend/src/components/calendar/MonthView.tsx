@@ -119,9 +119,9 @@ const MonthView: React.FC<MonthViewProps> = ({ currentDate, onDateClick }) => {
               }}
               className={`relative rounded-xl md:rounded-2xl ${isSixWeeks ? 'p-0.5 md:p-1 lg:p-1.5' : 'p-1 md:p-2'} h-full flex flex-col group transition-all ring-1 ring-inset ${
                 isFullHoliday
-                  ? "bg-holiday-bg ring-holiday/20 hover:ring-holiday/50"
+                  ? "bg-holiday-bg ring-holiday/20 hover:ring-holiday/50 border-b-2 md:border-b-0 border-holiday/40"
                   : isHalfHoliday
-                    ? `bg-green-500/5 ring-green-500/20 hover:ring-green-500/40` 
+                    ? `bg-green-500/5 ring-green-500/20 hover:ring-green-500/40 border-b-2 md:border-b-0 border-green-500/30` 
                     : "bg-background ring-border hover:ring-primary/50"
               } cursor-pointer`}
               style={isHalfHoliday ? { 
@@ -162,7 +162,7 @@ const MonthView: React.FC<MonthViewProps> = ({ currentDate, onDateClick }) => {
                   .filter(e => e.start_time.startsWith(format(day, "yyyy-MM-dd")))
                   .map(event => (
                     <React.Fragment key={event.id}>
-                      <div className="md:hidden w-1.5 h-1.5 rounded-full bg-primary mt-0.5" title={event.title}></div>
+                      <div className="md:hidden w-4 h-1 rounded-full bg-primary mt-0.5" title={event.title}></div>
                       <div className={`hidden md:block px-2 py-0.5 bg-primary/10 ${isSixWeeks ? 'text-[8px]' : 'text-[9px]'} font-black text-primary rounded border border-primary/20 truncate w-full uppercase`} title={event.title}>
                         {event.title}
                       </div>

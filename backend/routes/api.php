@@ -32,6 +32,7 @@ Route::middleware('auth:sanctum')->group(function () {
     
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::post('/staff-holidays', [StaffHolidayController::class, 'store']);
+    Route::delete('/staff-holidays/{staffHoliday}', [StaffHolidayController::class, 'destroy']);
 
     // User Profile Routes
     Route::get('/profile', [ProfileController::class, 'index']);
