@@ -3,7 +3,8 @@
 import React from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useConfig } from "@/context/ConfigContext";
-import { LogOut, LayoutGrid, User, ShieldCheck, ChevronLeft } from "lucide-react";
+import { BACKEND_URL } from "@/lib/api";
+import { LogOut, LayoutGrid, User, ShieldCheck, ChevronLeft, UserCircle } from "lucide-react";
 import { useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
 import { ThemeToggle } from "./ThemeToggle";
