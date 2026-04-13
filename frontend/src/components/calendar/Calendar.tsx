@@ -10,7 +10,8 @@ import WeekView from "./WeekView";
 import DayView from "./DayView";
 import { EventModal } from "./EventModal";
 import { DayDetailsModal } from "./DayDetailsModal";
-import { ApiEvent, ApiHoliday } from "@/context/ConfigContext";
+import { useConfig, ApiEvent, ApiHoliday } from "@/context/ConfigContext";
+import NepaliDate from "nepali-datetime";
 
 type ViewType = "month" | "week" | "day";
 
@@ -23,6 +24,7 @@ const Calendar: React.FC = () => {
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [selectedTime, setSelectedTime] = useState<string | undefined>();
   const [selectedEvent, setSelectedEvent] = useState<ApiEvent | ApiHoliday | null>(null);
+  const { calendarMode } = useConfig();
 
   const openDayDetails = (date: Date) => {
     setSelectedDate(date);
@@ -39,14 +41,35 @@ const Calendar: React.FC = () => {
 
   const next = () => {
     setDirection(1);
-    if (view === "month") setCurrentDate(addMonths(currentDate, 1));
+    if (view === "month") {
+      if (calendarMode === "BS") {
+        const nd = new NepaliDate(currentDate);
+        let m = nd.getMonth() + 1;
+        let y = nd.getYear();
+        if (m > 11) { m = 0; y++; }
+        // Set to 15th of the month to avoid any edge cases with month lengths during transition
+        setCurrentDate(new NepaliDate(y, m, 15).getDateObject());
+      } else {
+        setCurrentDate(addMonths(currentDate, 1));
+      }
+    }
     else if (view === "week") setCurrentDate(addWeeks(currentDate, 1));
     else setCurrentDate(addDays(currentDate, 1));
   };
 
   const prev = () => {
     setDirection(-1);
-    if (view === "month") setCurrentDate(subMonths(currentDate, 1));
+    if (view === "month") {
+      if (calendarMode === "BS") {
+        const nd = new NepaliDate(currentDate);
+        let m = nd.getMonth() - 1;
+        let y = nd.getYear();
+        if (m < 0) { m = 11; y--; }
+        setCurrentDate(new NepaliDate(y, m, 15).getDateObject());
+      } else {
+        setCurrentDate(subMonths(currentDate, 1));
+      }
+    }
     else if (view === "week") setCurrentDate(subWeeks(currentDate, 1));
     else setCurrentDate(subDays(currentDate, 1));
   };
